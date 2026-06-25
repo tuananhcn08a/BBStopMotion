@@ -1,15 +1,14 @@
 <div align="center">
-  <img src="src/neo_stopmotion/resources/images/maker_viet_logo.png" width="180" alt="Maker Việt"/>
 
-  # NeoStopMotion
+  # BBStopMotion
 
-  **Maker Việt × ThingEdu — NEO One**
+  **Stop-motion studio cho trẻ em — NEO One**
 
-  Stop-motion studio cho trẻ em 6-14 tuổi. Chụp frame bằng nút bấm vật lý ThingBot (UART), ghép phim MP4+GIF kèm watermark Maker Việt, upload tự động lên cloud, sinh QR code cho phụ huynh quét tải về.
+  Stop-motion studio cho trẻ em 6-14 tuổi. Chụp frame bằng nút bấm vật lý ThingBot (UART), ghép phim MP4+GIF, upload tự động lên cloud, sinh QR code cho phụ huynh quét tải về.
 
-  [![PyPI version](https://img.shields.io/pypi/v/neo-stopmotion)](https://pypi.org/project/neo-stopmotion/)
+  [![PyPI version](https://img.shields.io/pypi/v/bbstopmotion)](https://pypi.org/project/bbstopmotion/)
   [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-  [![GitHub](https://img.shields.io/badge/github-ThingEdu%2Fneo--stopmotion-blue)](https://github.com/ThingEdu/neo-stopmotion)
+  [![GitHub](https://img.shields.io/badge/github-tuananhcn08a%2FBBStopMotion-blue)](https://github.com/tuananhcn08a/BBStopMotion)
 </div>
 
 ---
@@ -20,7 +19,7 @@
 - **2 nút ThingBot**: IO1 (xanh) chụp frame · IO2 (đỏ) tạo phim
 - Phím tắt: `Space`, `Z` (undo), `Enter` (export)
 - Ghép phim **MP4** (H.264 1280×720 10fps) + **GIF** (640×360 palette) qua ffmpeg
-- **Watermark Maker Việt** logo nhúng vào mỗi frame video (góc dưới phải, 85% opacity)
+- **Watermark BBStopMotion** logo nhúng vào mỗi frame video (góc dưới phải, 85% opacity)
 - **Upload cloud tự động** (catbox.moe vĩnh viễn, fallback 0x0.st)
 - **QR code** sinh local trỏ tới link cloud
 - **Auto-reset**: bấm IO1 trên SuccessPage để bắt đầu phim mới ngay
@@ -52,7 +51,7 @@ neo-stopmotion
 ### macOS dev
 
 ```bash
-git clone https://github.com/ThingEdu/neo-stopmotion.git
+git clone https://github.com/tuananhcn08a/BBStopMotion.git
 cd neo-stopmotion
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e .
@@ -73,7 +72,7 @@ NEO_STOPMOTION_AUTOSHOOT=8 NEO_STOPMOTION_AUTOEXPORT=1 \
 ### Triển khai NEO One (Linux ARM64)
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/ThingEdu/neo-stopmotion/main/scripts/install_on_neo.sh | bash
+curl -sSL https://raw.githubusercontent.com/tuananhcn08a/BBStopMotion/main/scripts/install_on_neo.sh | bash
 neo-stopmotion
 ```
 
@@ -136,5 +135,5 @@ MIT — theo cam kết Bình Dân Học STEM, mã nguồn mở, Made in Vietnam.
 <div align="center">
   <em>"Trao cho một đứa trẻ 8 tuổi quyền lực kể câu chuyện của riêng mình bằng công nghệ."</em>
 
-  <strong>Maker Việt × ThingEdu — 05/2026</strong>
+  <strong>BBStopMotion — 2026</strong>
 </div>

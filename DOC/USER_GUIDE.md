@@ -3,7 +3,7 @@
 
   # Hướng dẫn Sử dụng — Thợ Cả
 
-  **NeoStopMotion v1.0** · Maker Việt × ThingEdu · NEO One
+  **BBStopMotion v1.0 · NEO One
 
   Tài liệu này dành cho Thợ Cả (mentor) vận hành trạm tại Làng Maker.
   Học sinh không cần đọc — chỉ cần biết bấm 2 nút.
@@ -99,7 +99,7 @@ Phím phụ trên bàn phím (Thợ Cả dùng nếu HS bấm sai):
 1. HS bấm **IO2 đỏ** (hoặc Thợ Cả bấm Enter)
 2. Màn hình hiện **ExportingPage** với progress bar (~5-10s)
 3. Chuyển sang **SuccessPage**:
-   - Phim phát loop (có watermark Maker Việt góc dưới phải)
+   - Phim phát loop (có watermark BBStopMotion góc dưới phải)
    - QR code lớn để PH quét
    - URL phim trên cloud (catbox.moe)
 
@@ -178,7 +178,7 @@ Cả hai cách đều giữ phim cũ trong `~/projects/session_*/` (không xoá,
 - Có. catbox.moe lưu vô thời hạn. URL có thể chia sẻ lại bất cứ lúc nào.
 
 **"Tôi muốn upload lên YouTube nhà tôi được không?"**
-- Được. Tải MP4 về máy → upload thủ công lên kênh PH. (Phase 2 sẽ có auto-upload kênh chung Maker Việt.)
+- Được. Tải MP4 về máy → upload thủ công lên kênh PH. (Phase 2 sẽ có auto-upload kênh chung BBStopMotion.)
 
 **"Có phim mẫu nào cho tôi xem không?"**
 - Có Showcase Wall (TV phụ) đang phát loop. Xem mục "Tham khảo" cuối tài liệu.
@@ -195,4 +195,4 @@ Cả hai cách đều giữ phim cũ trong `~/projects/session_*/` (không xoá,
 
 > *"Chúng ta không chỉ làm một ứng dụng làm phim. Chúng ta đang trao cho một đứa trẻ 8 tuổi quyền lực kể câu chuyện của riêng mình bằng công nghệ."*
 
-**Maker Việt × ThingEdu — 05/2026**
+**BBStopMotion — 05/2026**

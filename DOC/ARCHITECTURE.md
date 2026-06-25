@@ -1,7 +1,7 @@
 # NeoStopMotion — Tài liệu Kiến trúc & Kế hoạch Triển khai
 
 > **Phiên bản:** 0.1.0 (Design)
-> **Tổ chức:** Maker Việt × Dế Foundation — ThingEdu
+> **Tổ chức:** BBStopMotion contributors — BBStopMotion
 > **Ngày soạn:** 2026-05-09
 > **Áp dụng cho:** Trạm 6 (TN04a) — Trạm Làm Phim Hoạt Hình, Làng Maker @ FPT Shop
 > **Tham chiếu spec:** `/Users/tuanln/Downloads/NEO_StopMotion_Tram6_Spec.md` v1.0
@@ -842,7 +842,7 @@ Tất cả lưu local trên NEO One. QR chỉ accessible trong WiFi LAN. Không 
 
 ### 12.8 Mã nguồn mở MIT
 
-Theo cam kết Bình Dân Học STEM. Public GitHub Maker Việt sau pilot.
+Theo cam kết Bình Dân Học STEM. Public GitHub BBStopMotion.
 
 ### 12.9 Atomic write cho PNG
 
@@ -1066,7 +1066,7 @@ Khớp với Chương 9 spec (3 tuần kick-off → v1.0).
 
 ## 18. License & Credits
 
-- **Phát triển**: Maker Việt × Dế Foundation × ThingEdu
+- **Phát triển**: BBStopMotion contributors
 - **Stack**: Python 3.10+ / PyQt6 / QML 6 / OpenCV / ffmpeg
 - **License**: MIT (cam kết public sau pilot, theo tinh thần Bình Dân Học STEM)
 - **Cảm ơn**: Tinkering Studio (Exploratorium) cho Animation Station nguyên bản
@@ -1074,6 +1074,6 @@ Khớp với Chương 9 spec (3 tuần kick-off → v1.0).
 ---
 
 > *"Chúng ta không chỉ làm một ứng dụng làm phim. Chúng ta đang trao cho một đứa trẻ 8 tuổi quyền lực kể câu chuyện của riêng mình bằng công nghệ — và đó chính là Constructionism."*
-> — Maker Việt × Dế Foundation, 05/2026
+> — BBStopMotion contributors, 05/2026
 
 **HẾT TÀI LIỆU KIẾN TRÚC v0.1 (Design)**

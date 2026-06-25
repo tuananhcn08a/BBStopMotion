@@ -1,6 +1,6 @@
 """ffmpeg-based video exporter for stop-motion frame sequences.
 
-Optionally overlays a Maker Việt watermark on every frame at bottom-right
+Optionally overlays a BBStopMotion watermark on every frame at bottom-right
 with 85% opacity.
 """
 from __future__ import annotations

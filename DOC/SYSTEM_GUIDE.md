@@ -3,7 +3,7 @@
 
   # Hướng dẫn Hệ thống (Developer)
 
-  **NeoStopMotion v1.0** · Maker Việt × ThingEdu
+  **NeoStopMotion v1.0** · BBStopMotion
 
   Tài liệu kỹ thuật cho dev/operator cài đặt, cấu hình, mở rộng app.
 </div>
@@ -17,7 +17,7 @@
 │                    UI LAYER (QML 6)                            │
 │                                                                │
 │  MainWindow.qml ─ StackView                                    │
-│   ├ SplashScreen.qml         (logo Maker Việt + branding)      │
+│   ├ SplashScreen.qml         (logo BBStopMotion + branding)      │
 │   ├ CapturePage.qml          (live preview + onion skin)       │
 │   ├ ExportingPage.qml        (progress bar)                    │
 │   └ SuccessPage.qml          (video loop + QR + share URL)     │
@@ -162,7 +162,7 @@ fullscreen = true          # production: true; dev: false để có thể đóng
     │   ├── frame_0001.png                   (atomic write: tmp → rename)
     │   ├── frame_0002.png                   (1280×720 PNG, RAW không có onion skin)
     │   └── ...
-    ├── output.mp4                           (1280×720 H.264, watermark Maker Việt)
+    ├── output.mp4                           (1280×720 H.264, watermark BBStopMotion)
     ├── output.gif                           (640×360 lanczos, watermark)
     ├── qr.png                               (QR code 360px trỏ tới shareUrl)
     └── project.json                         (SessionMeta serialized)
@@ -325,7 +325,7 @@ ls ~/neostopmotion_sessions/session_*/output.mp4   # MP4 phải tồn tại
 |---|---|---|
 | 1 (v1.0) | Capture + onion skin + ThingBot 2 nút + cloud share + watermark | ✅ Done |
 | 2 | Voice-over recording, slow/fast motion, Showcase Wall auto-update | 📋 Planned |
-| 3 | Auto-upload YouTube channel Maker Việt, multi-language, AR effects | 💭 Idea |
+| 3 | Auto-upload YouTube channel BBStopMotion, multi-language, AR effects | 💭 Idea |
 
 Chi tiết: xem [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — 30 task gốc, 6 thêm cho v1.0 actual.
 
@@ -334,7 +334,7 @@ Chi tiết: xem [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) — 30 task g�
 - GitHub: [github.com/makerviet/NeoStopMotion](https://github.com/makerviet/NeoStopMotion)
 - Issues / bug reports: GitHub Issues
 - Anh Tuấn (Già Làng) — `tuan@rogo.com.vn`
-- Team Software ThingEdu
+- Team Software BBStopMotion
 
 ---
 

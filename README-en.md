@@ -1,14 +1,13 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/ThingEdu/neo-stopmotion/main/src/neo_stopmotion/resources/images/maker_viet_logo.png" width="160" alt="Maker Việt"/>
 
-  # NeoStopMotion
+  # BBStopMotion
 
-  **Stop-motion studio for kids · Maker Việt × ThingEdu × NEO One**
+  **Stop-motion studio for kids · NEO One**
 
-  [![PyPI version](https://img.shields.io/pypi/v/neo-stopmotion)](https://pypi.org/project/neo-stopmotion/)
-  [![Python](https://img.shields.io/pypi/pyversions/neo-stopmotion)](https://pypi.org/project/neo-stopmotion/)
+  [![PyPI version](https://img.shields.io/pypi/v/bbstopmotion)](https://pypi.org/project/bbstopmotion/)
+  [![Python](https://img.shields.io/pypi/pyversions/bbstopmotion)](https://pypi.org/project/bbstopmotion/)
   [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-  [![GitHub](https://img.shields.io/badge/github-ThingEdu%2Fneo--stopmotion-blue)](https://github.com/ThingEdu/neo-stopmotion)
+  [![GitHub](https://img.shields.io/badge/github-tuananhcn08a%2FBBStopMotion-blue)](https://github.com/tuananhcn08a/BBStopMotion)
 </div>
 
 ---
@@ -41,7 +40,7 @@ The project is grounded in **Constructionism** (Papert, MIT): children learn by 
 - **Live webcam preview** with **onion skin** overlay — the previous frame appears faintly over the live feed to guide positioning
 - **2-button ThingBot controller** (IO1 blue = capture frame · IO2 red = create film) over UART, with full keyboard fallback (`Space` / `Enter` / `Z`)
 - **MP4 export** (H.264 1280×720 at 10 fps) and **GIF** (640×360 lanczos palette) via ffmpeg, all processed on a non-blocking QThread
-- **Maker Việt watermark** automatically embedded bottom-right at 85% opacity
+- **BBStopMotion watermark** automatically embedded bottom-right at 85% opacity
 - **Automatic cloud upload** — catbox.moe (permanent, primary) with 0x0.st as 30-day fallback
 - **QR code** generated locally and displayed on-screen for instant parent download
 - **Auto-reset flow** — pressing the capture button on the success screen immediately starts a new session without losing the previous film
@@ -66,26 +65,26 @@ neo-stopmotion
 The installer handles system Qt6/PyQt6 and OpenCV via apt to avoid building from source on ARM:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/ThingEdu/neo-stopmotion/main/scripts/install_on_neo.sh | bash
+curl -sSL https://raw.githubusercontent.com/tuananhcn08a/BBStopMotion/main/scripts/install_on_neo.sh | bash
 neo-stopmotion
 ```
 
 Pin a specific version:
 
 ```bash
-bash <(curl -sSL https://raw.githubusercontent.com/ThingEdu/neo-stopmotion/main/scripts/install_on_neo.sh) --version=1.0.1
+bash <(curl -sSL https://raw.githubusercontent.com/tuananhcn08a/BBStopMotion/main/scripts/install_on_neo.sh) --version=1.0.1
 ```
 
 Uninstall:
 
 ```bash
-bash <(curl -sSL https://raw.githubusercontent.com/ThingEdu/neo-stopmotion/main/scripts/install_on_neo.sh) --uninstall
+bash <(curl -sSL https://raw.githubusercontent.com/tuananhcn08a/BBStopMotion/main/scripts/install_on_neo.sh) --uninstall
 ```
 
 ### Developer setup (macOS / Ubuntu desktop)
 
 ```bash
-git clone https://github.com/ThingEdu/neo-stopmotion.git
+git clone https://github.com/tuananhcn08a/BBStopMotion.git
 cd neo-stopmotion
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e .
@@ -142,7 +141,7 @@ SplashScreen ──2s──► CapturePage ◄───────────�
 ├── frames/
 │   ├── frame_0001.png   # raw PNG, no watermark
 │   └── ...
-├── output.mp4           # 1280×720 H.264 + Maker Việt watermark
+├── output.mp4           # 1280×720 H.264 + BBStopMotion watermark
 ├── output.gif           # 640×360 lanczos + watermark
 ├── qr.png               # 360 px QR pointing to cloud URL
 └── project.json         # session metadata (id, frame count, urls…)
@@ -180,7 +179,7 @@ NeoStopMotion is built on three principles:
 
 - **Constructionism (Papert, MIT)** — children learn by creating something personally meaningful, not by watching a demonstration. Each film is an *object to think with*.
 - **Tinkering (Exploratorium)** — open-ended materials and an open environment let children self-direct. The facilitator asks questions; the environment teaches.
-- **Bình Dân Học STEM (Maker Việt)** — Made in Vietnam, MIT-licensed, affordable. Vietnamese children deserve high-quality STEM tools built at home.
+- **Bình Dân Học STEM** — Made in Vietnam, MIT-licensed, affordable. Vietnamese children deserve high-quality STEM tools built at home.
 
 ### Contributing
 
@@ -196,9 +195,8 @@ Please open an issue first for significant changes so we can discuss the approac
 
 ### Authors
 
-- **Maker Việt** — hardware platform and pedagogy
-- **Dế Foundation** — software architecture and implementation
-- **ThingEdu** — ThingBot firmware and education program
+BBStopMotion is a fork of [NeoStopMotion](https://github.com/makerviet/NeoStopMotion) (MIT).
+Original authors: Maker Việt, Dế Foundation, ThingEdu.
 
 ### License
 
@@ -209,5 +207,5 @@ MIT — open source, Made in Vietnam.
 <div align="center">
   <em>"Give an 8-year-old the power to tell their own story with technology."</em>
   <br/>
-  <strong>Maker Việt × ThingEdu × Dế Foundation — 2026</strong>
+  <strong>BBStopMotion — 2026</strong>
 </div>

@@ -1,11 +1,9 @@
 [project]
-name = "neo-stopmotion"
+name = "bbstopmotion"
 version = "1.0.1"
-description = "Stop-motion studio — NEO One × ThingEdu × Maker Việt"
+description = "BBStopMotion — stop-motion studio for kids"
 authors = [
-    {name = "Maker Việt"},
-    {name = "Dế Foundation"},
-    {name = "ThingEdu"},
+    {name = "BBStopMotion contributors"},
 ]
 license = {text = "MIT"}
 readme = "README-en.md"

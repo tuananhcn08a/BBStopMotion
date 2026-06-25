@@ -15,13 +15,12 @@ Item {
             anchors.centerIn: parent
             spacing: N.NeoConstants.spacingL
 
-            Image {
+            Text {
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: 220
-                Layout.preferredHeight: 220
-                source: resourcesUrl + "/images/maker_viet_logo.png"
-                fillMode: Image.PreserveAspectFit
-                smooth: true
+                text: "BBStopMotion"
+                font.pixelSize: N.NeoConstants.fontTitle * 1.5
+                font.bold: true
+                color: N.NeoConstants.primary
             }
 
             Text {
@@ -34,7 +33,7 @@ Item {
 
             Text {
                 Layout.alignment: Qt.AlignHCenter
-                text: "NEO One — ThingEdu"
+                text: "NEO One"
                 font.pixelSize: N.NeoConstants.fontBody
                 color: N.NeoConstants.textSecondary
             }

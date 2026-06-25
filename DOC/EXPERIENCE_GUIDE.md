@@ -4,7 +4,7 @@
   # Hướng dẫn Trải nghiệm 25-30 phút
 
   **Cho học sinh 6-14 tuổi**
-  Trạm Làm Phim Hoạt Hình · NEO One × ThingEdu × Maker Việt
+  Trạm Làm Phim Hoạt Hình · BBStopMotion — NEO One
 </div>
 
 ---
@@ -191,7 +191,7 @@ HS bấm nhầm khi tay còn trong khung. **Dạy debug**:
    - Progress bar chạy 10% → 60% → 95% → 100%
    - Text: _"Đang ghép phim MP4..." → "Đang tạo GIF..." → "Sắp xong..."_
 3. Sau 5-10 giây, **SuccessPage** hiện:
-   - Phim phát loop bên trái (có watermark Maker Việt góc dưới phải)
+   - Phim phát loop bên trái (có watermark BBStopMotion góc dưới phải)
    - QR code lớn 360px bên phải
    - Link cloud bên dưới QR
 
@@ -204,7 +204,7 @@ HS bấm nhầm khi tay còn trong khung. **Dạy debug**:
 - ≥ 5 frame (nút mờ và disabled nếu chưa đủ)
 - Nếu HS bấm `Enter` khi <5 frame → toast _"Cần ít nhất 5 frame — con chụp thêm vài tấm nữa nha!"_
 
-### Watermark logo Maker Việt
+### Watermark logo BBStopMotion
 Tự động được nhúng vào video tại góc dưới phải mỗi frame. HS không cần làm gì.
 
 ---
@@ -301,7 +301,7 @@ Sau mỗi HS, Thợ Cả ghi:
 ### Tinkering (Exploratorium, San Francisco)
 > Vật liệu mở + môi trường có sự đa dạng = trẻ tự khám phá. Thợ Cả không "giải đáp" — Thợ Cả "đồng hành".
 
-### Bình Dân Học STEM (Maker Việt)
+### Bình Dân Học STEM
 > Made in Vietnam. Mã nguồn mở. Giá phổ thông. Trẻ em Việt Nam xứng đáng được dùng đồ tốt mà không phải nhập từ nước ngoài.
 
 ### "Hard Fun" (Papert)
@@ -316,12 +316,12 @@ Sau mỗi HS, Thợ Cả ghi:
 - **System Guide** (cho dev): [SYSTEM_GUIDE.md](SYSTEM_GUIDE.md)
 - **Architecture**: [ARCHITECTURE.md](ARCHITECTURE.md)
 - **Animation Station Exploratorium** (tham khảo gốc): [youtube.com/user/AnimationStationBeta](https://www.youtube.com/user/AnimationStationBeta)
-- **Sổ tay Thợ Cả Làng Maker** (tài liệu chính cộng đồng): _xem nội bộ Maker Việt_
+- **Sổ tay Thợ Cả Làng Maker** (tài liệu chính cộng đồng): _xem nội bộ BBStopMotion_
 
 ---
 
 > *"Chúng ta không chỉ làm một ứng dụng làm phim. Chúng ta đang trao cho một đứa trẻ 8 tuổi quyền lực kể câu chuyện của riêng mình bằng công nghệ — và đó chính là Constructionism."*
 >
-> — Maker Việt × ThingEdu × Dế Foundation, 05/2026
+> — BBStopMotion contributors, 05/2026
 
 **v1.0 · 2026-05-10**

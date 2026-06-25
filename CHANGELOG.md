@@ -17,12 +17,12 @@
 - **Synthetic capture** — fallback khi webcam không available (env `NEO_STOPMOTION_CAPTURE=synthetic`); sinh frame test pattern animation.
 - **Keyboard fallback** — Space (= IO1), Enter (= IO2), Z (= UNDO).
 - **Export pipeline** — ffmpeg MP4 (libx264, 1280×720, 10fps) + GIF (640×360, 2-pass palette lanczos), QThread non-blocking với progress bar.
-- **Watermark Maker Việt** — logo nhúng góc dưới phải mỗi frame video (110px, 85% opacity), áp dụng cho cả MP4 và GIF.
+- **Watermark BBStopMotion** — logo nhúng góc dưới phải mỗi frame video (110px, 85% opacity), áp dụng cho cả MP4 và GIF.
 - **Cloud share** — auto-upload lên catbox.moe (vĩnh viễn, 200MB free) với fallback 0x0.st (30 ngày).
 - **QR code** — sinh local 360px PNG trỏ tới link cloud, hiển thị trên SuccessPage.
 - **Auto-reset on SHOOT** — bấm Space/IO1 trên SuccessPage tự động tạo session mới + chụp frame đầu tiên ngay.
 - **UI** — QML 6 + PyQt6, 4 page (Splash → Capture → Exporting → Success), Singleton design tokens NeoConstants + AppState, StackView navigation.
-- **Branding** — logo Maker Việt với halo trắng quanh chữ (đọc được trên nền tối), label "NEO One — ThingEdu" thống nhất Splash/Capture/Success.
+- **Branding** — BBStopMotion identity, label "NEO One" thống nhất Splash/Capture/Success.
 - **Universal copy** — text dùng "bạn" thay vì "con" để phù hợp đa đối tượng (HS + PH + Thợ Cả).
 
 ### Documentation

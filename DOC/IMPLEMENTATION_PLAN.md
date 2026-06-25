@@ -131,7 +131,7 @@ README.md                             T1.1
 name = "neo-stopmotion"
 version = "0.1.0"
 description = "Stop-motion studio cho Trạm 6 Làng Maker @ FPT Shop"
-authors = [{name = "Maker Việt × Dế Foundation"}]
+authors = [{name = "BBStopMotion contributors"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.10"
@@ -4948,7 +4948,7 @@ git commit -m "docs: pilot report from 10 HS at FPT Shop"
 - systemd auto-start kiosk
 - 1 ThingBot board mẫu flash xong
 - Documentation: `DOC/{ARCHITECTURE,IMPLEMENTATION_PLAN,SMOKE_TEST_REPORT,PILOT_REPORT,HARDWARE,DEPLOY_NEO_ONE,TEACHER_MANUAL,PROTOCOL}.md`
-- Repository public GitHub Maker Việt với MIT license
+- Repository public GitHub BBStopMotion với MIT license
 
 ---
 
