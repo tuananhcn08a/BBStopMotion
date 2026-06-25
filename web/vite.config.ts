@@ -4,17 +4,15 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  server: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
-  },
-  preview: {
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
+  // DIAGNOSTIC (main): tạm bỏ COOP/COEP — lõi ffmpeg đơn luồng không cần SharedArrayBuffer,
+  // và header require-corp đang chặn web worker của ffmpeg (ERR_BLOCKED_BY_RESPONSE).
+  //
+  // T-W06: exclude @ffmpeg/ffmpeg + @ffmpeg/util khỏi Vite pre-bundling.
+  // Lý do: @ffmpeg/ffmpeg tự resolve worker URL theo đường dẫn relative bên trong package.
+  // Nếu Vite bundle lại → worker URL bị đổi → fetch worker CORS fail (ERR_BLOCKED_BY_RESPONSE).
+  // Giải pháp chính thức: optimizeDeps.exclude để Vite giữ nguyên cấu trúc module gốc.
+  optimizeDeps: {
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'],
   },
   test: {
     environment: 'jsdom',
