@@ -1,4 +1,4 @@
-export type AppState = 'PERMISSION' | 'CAPTURING' | 'EXPORTING' | 'SUCCESS'
+export type AppState = 'CAPTURING' | 'EXPORTING' | 'SUCCESS'
 
 export type FpsLevel = 'slow' | 'normal' | 'fast'
 export const FPS_VALUES: Record<FpsLevel, number> = {

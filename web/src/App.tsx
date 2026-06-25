@@ -1,22 +1,17 @@
 import { useState, useCallback } from 'react'
 import { AppState, CapturedFrame, ExportResult, FpsLevel } from './types'
-import PermissionScreen from './components/PermissionScreen'
 import CaptureScreen from './components/CaptureScreen'
 import ExportProgress from './components/ExportProgress'
 import SuccessScreen from './components/SuccessScreen'
 import { useExport } from './hooks/useExport'
 
 function App() {
-  const [appState, setAppState] = useState<AppState>('PERMISSION')
+  const [appState, setAppState] = useState<AppState>('CAPTURING')
   const [frames, setFrames] = useState<CapturedFrame[]>([])
   const [fpsLevel, setFpsLevel] = useState<FpsLevel>('normal')
   const [exportResult, setExportResult] = useState<ExportResult | null>(null)
 
   const { exportVideo, progressMessage } = useExport()
-
-  const handleCameraGranted = useCallback(() => {
-    setAppState('CAPTURING')
-  }, [])
 
   const handleExport = useCallback(async (currentFrames: CapturedFrame[], currentFps: FpsLevel) => {
     setAppState('EXPORTING')
@@ -38,9 +33,6 @@ function App() {
 
   return (
     <>
-      {appState === 'PERMISSION' && (
-        <PermissionScreen onGranted={handleCameraGranted} />
-      )}
       {appState === 'CAPTURING' && (
         <CaptureScreen
           frames={frames}

@@ -15,8 +15,29 @@ interface Props {
   onExport: (frames: CapturedFrame[], fps: FpsLevel) => void
 }
 
+// SVG icon for camera-off state
+function CameraOffIcon() {
+  return (
+    <svg
+      width="64"
+      height="64"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="rgba(255,255,255,0.35)"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="1" y1="1" x2="23" y2="23" />
+      <path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34" />
+      <circle cx="12" cy="13" r="4" />
+    </svg>
+  )
+}
+
 export default function CaptureScreen({ frames, setFrames, fpsLevel, setFpsLevel, onExport }: Props) {
-  const { videoRef, status, requestCamera, stream } = useCamera()
+  const { videoRef, state, stream, devices, activeDeviceId, requestCamera, switchCamera, error } = useCamera()
   const { captureFrame, deleteLastFrame, getOnionSkinFrame } = useCapture()
 
   const [isFlashing, setIsFlashing] = useState(false)
@@ -24,11 +45,6 @@ export default function CaptureScreen({ frames, setFrames, fpsLevel, setFpsLevel
   const [previewIndex, setPreviewIndex] = useState(0)
   const [exportError, setExportError] = useState<string | null>(null)
   const previewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  // Start camera on mount
-  useEffect(() => {
-    void requestCamera()
-  }, [requestCamera])
 
   // Attach stream to video element
   useEffect(() => {
@@ -45,7 +61,6 @@ export default function CaptureScreen({ frames, setFrames, fpsLevel, setFpsLevel
         setPreviewIndex(prev => {
           const next = prev + 1
           if (next >= frames.length) {
-            // Stop at end
             clearInterval(previewIntervalRef.current ?? undefined)
             setIsPreviewMode(false)
             return 0
@@ -62,17 +77,16 @@ export default function CaptureScreen({ frames, setFrames, fpsLevel, setFpsLevel
   }, [isPreviewMode, frames.length, fpsLevel])
 
   const handleCapture = useCallback(() => {
-    if (!videoRef.current || isPreviewMode) return
+    if (!videoRef.current || isPreviewMode || state !== 'live') return
     const frame = captureFrame(videoRef.current)
     if (!frame) return
 
-    // Flash effect
     setIsFlashing(true)
     setTimeout(() => setIsFlashing(false), 150)
 
     setFrames(prev => [...prev, frame])
     setExportError(null)
-  }, [videoRef, isPreviewMode, captureFrame, setFrames])
+  }, [videoRef, isPreviewMode, state, captureFrame, setFrames])
 
   const handleDeleteLast = useCallback(() => {
     if (frames.length === 0) return
@@ -99,7 +113,6 @@ export default function CaptureScreen({ frames, setFrames, fpsLevel, setFpsLevel
   // Keyboard shortcuts
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      // Don't capture keys when focus is in a button/input
       if (e.target instanceof HTMLButtonElement) return
 
       switch (e.code) {
@@ -146,9 +159,10 @@ export default function CaptureScreen({ frames, setFrames, fpsLevel, setFpsLevel
   const onionSkinFrame = getOnionSkinFrame(frames)
   const fps = FPS_VALUES[fpsLevel]
   const estimatedSeconds = frames.length > 0 ? (frames.length / fps).toFixed(1) : '0.0'
-
-  // Preview mode: show the frame at previewIndex
   const previewFrame = isPreviewMode && frames[previewIndex] ? frames[previewIndex] : null
+
+  // Camera is ready for capture
+  const cameraLive = state === 'live'
 
   return (
     <div className={styles.app}>
@@ -159,8 +173,6 @@ export default function CaptureScreen({ frames, setFrames, fpsLevel, setFpsLevel
           <span className={styles.brandName}>Xưởng phim của bé</span>
         </div>
         <div className={styles.steps}>
-          <span className={styles.stepDone}>Chọn camera</span>
-          <span className={styles.stepSep}>›</span>
           <span className={styles.stepActive}>Chụp frame</span>
           <span className={styles.stepSep}>›</span>
           <span className={styles.stepPending}>Xuất phim</span>
@@ -173,14 +185,91 @@ export default function CaptureScreen({ frames, setFrames, fpsLevel, setFpsLevel
         {/* Preview column */}
         <div className={styles.previewCol}>
           <div className={styles.previewBox}>
-            {/* Live video (hidden in preview mode) */}
+
+            {/* ── STATE: requesting ── */}
+            {state === 'requesting' && (
+              <div className={styles.cameraPlaceholder} data-testid="camera-requesting">
+                <div className={styles.spinner} aria-label="Đang tải" />
+                <p className={styles.placeholderText}>Đang kết nối camera...</p>
+              </div>
+            )}
+
+            {/* ── STATE: denied ── */}
+            {state === 'denied' && (
+              <div className={styles.cameraPlaceholder} data-testid="camera-denied">
+                <CameraOffIcon />
+                <p className={styles.placeholderText}>
+                  {error ?? 'Con chưa cho app dùng camera.'}
+                </p>
+                <button
+                  className={styles.retrySmall}
+                  onClick={() => void requestCamera()}
+                  data-testid="retry-button"
+                >
+                  Thử lại
+                </button>
+                {devices.length > 0 && (
+                  <select
+                    className={styles.cameraSelect}
+                    value={activeDeviceId ?? ''}
+                    onChange={e => void switchCamera(e.target.value)}
+                    aria-label="Chọn camera khác"
+                    data-testid="camera-select"
+                  >
+                    <option value="" disabled>Chọn camera khác</option>
+                    {devices.map((d, i) => (
+                      <option key={d.deviceId} value={d.deviceId}>
+                        {d.label || `Camera ${i + 1}`}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
+            {/* ── STATE: no-device ── */}
+            {state === 'no-device' && (
+              <div className={styles.cameraPlaceholder} data-testid="camera-no-device">
+                <CameraOffIcon />
+                <p className={styles.placeholderText}>
+                  Không tìm thấy camera. Con thử cắm camera vào rồi bấm Thử lại nhé!
+                </p>
+                <button
+                  className={styles.retrySmall}
+                  onClick={() => void requestCamera()}
+                  data-testid="retry-button"
+                >
+                  Thử lại
+                </button>
+                {devices.length > 0 && (
+                  <select
+                    className={styles.cameraSelect}
+                    value={activeDeviceId ?? ''}
+                    onChange={e => void switchCamera(e.target.value)}
+                    aria-label="Chọn camera khác"
+                    data-testid="camera-select"
+                  >
+                    <option value="" disabled>Chọn camera khác</option>
+                    {devices.map((d, i) => (
+                      <option key={d.deviceId} value={d.deviceId}>
+                        {d.label || `Camera ${i + 1}`}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
+            {/* ── STATE: live ── */}
+            {/* Video is always rendered (needed for capture); hidden unless live */}
             <video
               ref={videoRef as React.RefObject<HTMLVideoElement>}
-              className={`${styles.video} ${isPreviewMode ? styles.hidden : ''}`}
+              className={`${styles.video} ${!cameraLive || isPreviewMode ? styles.hidden : ''}`}
               autoPlay
               playsInline
               muted
               aria-label="Live camera preview"
+              data-testid="camera-video"
             />
 
             {/* Preview mode: show captured frame */}
@@ -192,47 +281,41 @@ export default function CaptureScreen({ frames, setFrames, fpsLevel, setFpsLevel
               />
             )}
 
-            {/* Onion skin — hidden in preview mode */}
+            {/* Onion skin — hidden in preview mode or when camera not live */}
             <OnionSkin
               frame={onionSkinFrame}
-              visible={!isPreviewMode && frames.length > 0}
+              visible={cameraLive && !isPreviewMode && frames.length > 0}
             />
 
             {/* Flash overlay */}
             {isFlashing && <div className={styles.flash} aria-hidden="true" />}
 
-            {/* Camera disconnected overlay */}
-            {status === 'disconnected' && (
-              <div className={styles.disconnectOverlay} role="alert">
-                <p>Camera bị ngắt. Bấm Thử lại.</p>
-                <button onClick={() => void requestCamera()} className={styles.retrySmall}>
-                  Thử lại
-                </button>
-              </div>
-            )}
-
-            {/* Frame counter */}
+            {/* Frame counter — always visible */}
             <div className={styles.frameCounter}>
               <div className={styles.frameNum}>{frames.length}</div>
               <div className={styles.frameLabel}>FRAME</div>
               <div className={styles.frameDur}>≈ {estimatedSeconds} giây</div>
             </div>
 
-            {/* LIVE / XEMPHIM badge */}
-            <div className={styles.liveBadge}>
-              {isPreviewMode
-                ? <span className={styles.previewBadge}>XEMPHIM</span>
-                : <><div className={styles.liveDot} /><span>LIVE</span></>
-              }
-            </div>
+            {/* LIVE / XEMPHIM badge — only when camera is live */}
+            {cameraLive && (
+              <div className={styles.liveBadge}>
+                {isPreviewMode
+                  ? <span className={styles.previewBadge}>XEMPHIM</span>
+                  : <><div className={styles.liveDot} /><span>LIVE</span></>
+                }
+              </div>
+            )}
 
             {/* Hint */}
-            <div className={styles.previewHint}>
-              {frames.length === 0
-                ? 'Bấm Space để chụp frame đầu tiên!'
-                : 'Bấm Space để chụp'
-              }
-            </div>
+            {cameraLive && (
+              <div className={styles.previewHint}>
+                {frames.length === 0
+                  ? 'Bấm Space để chụp frame đầu tiên!'
+                  : 'Bấm Space để chụp'
+                }
+              </div>
+            )}
           </div>
         </div>
 
@@ -246,7 +329,8 @@ export default function CaptureScreen({ frames, setFrames, fpsLevel, setFpsLevel
               className={styles.captureBtn}
               onClick={handleCapture}
               aria-label="Chụp frame — phím Space"
-              disabled={isPreviewMode}
+              disabled={!cameraLive || isPreviewMode}
+              style={{ opacity: cameraLive && !isPreviewMode ? 1 : 0.4 }}
             >
               <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
