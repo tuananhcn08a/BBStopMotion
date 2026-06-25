@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import type { FFmpeg } from '@ffmpeg/ffmpeg'
 import { CapturedFrame, ExportResult, FpsLevel, FPS_VALUES } from '../types'
 
 // Upload endpoint — devops will implement this. See DEVOPS_INTERFACE.md
@@ -15,82 +16,75 @@ async function uploadFile(blob: Blob, filename: string): Promise<string> {
   return data.url
 }
 
-async function assembleVideoMediaRecorder(
-  frames: CapturedFrame[],
-  fps: number,
-): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas')
-    const img = new Image()
+// Module-level cache: ffmpeg instance is lazy-loaded once and reused
+let ffmpegInstance: FFmpeg | null = null
 
-    // Determine dimensions from first frame
-    img.onload = () => {
-      canvas.width = img.naturalWidth
-      canvas.height = img.naturalHeight
-      const ctx = canvas.getContext('2d')
-      if (!ctx) { reject(new Error('Canvas context unavailable')); return }
+/** Reset the cached FFmpeg instance. For use in tests only. */
+export function _resetFfmpegInstance(): void {
+  ffmpegInstance = null
+}
 
-      const stream = canvas.captureStream(fps)
-      const options: MediaRecorderOptions = {}
-      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
-        options.mimeType = 'video/webm;codecs=vp9'
-      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
-        options.mimeType = 'video/webm;codecs=vp8'
-      }
-
-      const recorder = new MediaRecorder(stream, options)
-      const chunks: Blob[] = []
-      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data) }
-      recorder.onstop = () => resolve(new Blob(chunks, { type: recorder.mimeType }))
-      recorder.onerror = () => reject(new Error('MediaRecorder error'))
-
-      recorder.start()
-
-      let frameIdx = 0
-      const frameInterval = 1000 / fps
-
-      const drawNext = () => {
-        if (frameIdx >= frames.length) {
-          recorder.stop()
-          stream.getTracks().forEach(t => t.stop())
-          return
-        }
-        const frame = frames[frameIdx]
-        if (!frame) { recorder.stop(); return }
-        const fImg = new Image()
-        fImg.onload = () => {
-          ctx.drawImage(fImg, 0, 0, canvas.width, canvas.height)
-          frameIdx++
-          setTimeout(drawNext, frameInterval)
-        }
-        fImg.onerror = () => { frameIdx++; setTimeout(drawNext, frameInterval) }
-        fImg.src = frame.dataUrl
-      }
-
-      drawNext()
-    }
-    img.onerror = () => reject(new Error('Failed to load first frame'))
-    img.src = frames[0]?.dataUrl ?? ''
+async function loadFfmpeg(onProgress?: (msg: string) => void): Promise<FFmpeg> {
+  if (ffmpegInstance) return ffmpegInstance
+  onProgress?.('Đang chuẩn bị phần mềm ghép phim...')
+  const { FFmpeg } = await import('@ffmpeg/ffmpeg')
+  const { toBlobURL } = await import('@ffmpeg/util')
+  const ffmpeg = new FFmpeg()
+  const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd'
+  await ffmpeg.load({
+    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
   })
+  ffmpegInstance = ffmpeg
+  return ffmpeg
+}
+
+export async function exportToMp4(
+  frames: string[],
+  fps: number,
+  onProgress?: (msg: string) => void,
+): Promise<Blob> {
+  const ffmpeg = await loadFfmpeg(onProgress)
+  const { fetchFile } = await import('@ffmpeg/util')
+  // Write each frame as input000.jpg, input001.jpg, ...
+  for (let i = 0; i < frames.length; i++) {
+    const name = `input${String(i).padStart(3, '0')}.jpg`
+    await ffmpeg.writeFile(name, await fetchFile(frames[i] ?? ''))
+  }
+  onProgress?.('Đang ghép phim...')
+  await ffmpeg.exec([
+    '-framerate', String(fps),
+    '-i', 'input%03d.jpg',
+    '-c:v', 'libx264',
+    '-pix_fmt', 'yuv420p',
+    '-movflags', '+faststart',
+    'output.mp4',
+  ])
+  const data = await ffmpeg.readFile('output.mp4')
+  return new Blob([data], { type: 'video/mp4' })
 }
 
 export interface UseExportReturn {
   exportVideo: (frames: CapturedFrame[], fpsLevel: FpsLevel) => Promise<ExportResult>
   isExporting: boolean
+  progressMessage: string
 }
 
 export function useExport(): UseExportReturn {
   const [isExporting, setIsExporting] = useState(false)
+  const [progressMessage, setProgressMessage] = useState('')
 
   const exportVideo = useCallback(async (
     frames: CapturedFrame[],
     fpsLevel: FpsLevel,
   ): Promise<ExportResult> => {
     setIsExporting(true)
+    setProgressMessage('')
     try {
       const fps = FPS_VALUES[fpsLevel]
-      const blob = await assembleVideoMediaRecorder(frames, fps)
-      const filename = `neo-stopmotion-${Date.now()}.webm`
+      const dataUrls = frames.map(f => f.dataUrl)
+      const blob = await exportToMp4(dataUrls, fps, setProgressMessage)
+      const filename = `phim-cua-con-${Date.now()}.mp4`
 
       let uploadUrl: string | undefined
       let uploadError: string | undefined
@@ -104,8 +98,9 @@ export function useExport(): UseExportReturn {
       return { blob, filename, uploadUrl, uploadError }
     } finally {
       setIsExporting(false)
+      setProgressMessage('')
     }
   }, [])
 
-  return { exportVideo, isExporting }
+  return { exportVideo, isExporting, progressMessage }
 }

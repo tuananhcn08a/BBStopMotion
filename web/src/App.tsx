@@ -12,7 +12,7 @@ function App() {
   const [fpsLevel, setFpsLevel] = useState<FpsLevel>('normal')
   const [exportResult, setExportResult] = useState<ExportResult | null>(null)
 
-  const { exportVideo } = useExport()
+  const { exportVideo, progressMessage } = useExport()
 
   const handleCameraGranted = useCallback(() => {
     setAppState('CAPTURING')
@@ -51,7 +51,7 @@ function App() {
         />
       )}
       {appState === 'EXPORTING' && (
-        <ExportProgress />
+        <ExportProgress message={progressMessage} />
       )}
       {appState === 'SUCCESS' && exportResult && (
         <SuccessScreen
