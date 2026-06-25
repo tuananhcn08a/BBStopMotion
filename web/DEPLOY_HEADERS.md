@@ -1,71 +1,20 @@
 # Required HTTP Headers for Deployment
 
-ffmpeg.wasm (used for in-browser MP4 export) requires `SharedArrayBuffer`,
-which browsers only expose when served with these two headers on EVERY response:
+## COOP/COEP — KHÔNG CẦN (lõi ffmpeg đơn luồng)
 
-```
-Cross-Origin-Opener-Policy: same-origin
-Cross-Origin-Embedder-Policy: require-corp
-```
-
-Without these headers, the app will crash at export time with:
-`RangeError: SharedArrayBuffer is not defined`
-
-## How to configure per hosting provider
-
-### Nginx
-
-```nginx
-server {
-    ...
-    add_header Cross-Origin-Opener-Policy "same-origin" always;
-    add_header Cross-Origin-Embedder-Policy "require-corp" always;
-}
-```
-
-### Caddy
-
-```
-header {
-    Cross-Origin-Opener-Policy "same-origin"
-    Cross-Origin-Embedder-Policy "require-corp"
-}
-```
-
-### Netlify (`netlify.toml`)
-
-```toml
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Cross-Origin-Opener-Policy = "same-origin"
-    Cross-Origin-Embedder-Policy = "require-corp"
-```
-
-### Vercel (`vercel.json`)
-
-```json
-{
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
-        { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
-      ]
-    }
-  ]
-}
-```
-
-### GitHub Pages
-
-GitHub Pages does not support custom response headers. Use Netlify or Vercel instead.
-
-## Dev server
-
-These headers are already configured in `vite.config.ts` for `npm run dev` and `npm run preview`.
-No extra setup needed for local development.
+> **Lưu ý quan trọng (T-W06):** Lõi ffmpeg (`@ffmpeg/core@0.12.6`) là **đơn luồng** — không dùng
+> `SharedArrayBuffer`. Do đó, hai header dưới đây **không cần thiết** và thực tế **gây lỗi**
+> `ERR_BLOCKED_BY_RESPONSE` khi Web Worker của `@ffmpeg/ffmpeg` load trong Vite / CDN.
+>
+> ```
+> Cross-Origin-Opener-Policy: same-origin     ← KHÔNG ĐẶT
+> Cross-Origin-Embedder-Policy: require-corp  ← KHÔNG ĐẶT
+> ```
+>
+> **Không đặt hai header này** trên môi trường production.
+>
+> Nếu tương lai nâng cấp lên lõi đa luồng (`@ffmpeg/core-mt`), khi đó `SharedArrayBuffer` sẽ được
+> dùng và COOP/COEP sẽ cần thêm lại. Cho đến lúc đó, bỏ hoàn toàn.
 
 ---
 
@@ -78,34 +27,39 @@ The app self-hosts ffmpeg core files under `/ffmpeg/`:
 These files live in `web/public/ffmpeg/` in the repo and are included in the Vite build output.
 
 ### Why same-origin is required
-`Cross-Origin-Embedder-Policy: require-corp` (set in the headers above) blocks cross-origin
-responses that do not include `Cross-Origin-Resource-Policy: require-corp` or
-`Cross-Origin-Resource-Policy: cross-origin`. Public CDNs (unpkg, jsDelivr, etc.) do not
-set this header, so the browser silently blocks the fetch → `ffmpeg.load()` hangs → app
-freezes at "Đang chuẩn bị phần mềm ghép phim...".
 
-Same-origin assets are automatically trusted under COEP — no extra header needed.
+The ffmpeg worker fetches core files using relative URLs resolved against the app's own origin.
+If the core files are served from a different origin (e.g. a CDN), the browser blocks the fetch
+due to CORS — `ffmpeg.load()` hangs → app freezes at "Đang chuẩn bị phần mềm ghép phim...".
+
+Note: this is a **CORS** requirement, NOT a COEP requirement. COEP is not set.
 
 ### Deployment checklist for ffmpeg assets
+
 - [ ] `/ffmpeg/ffmpeg-core.js` is present in the build output (Vite copies from `public/`)
 - [ ] `/ffmpeg/ffmpeg-core.wasm` is present in the build output
 - [ ] Both files are served from the **same origin** as the app (same scheme + domain + port)
-- [ ] Do NOT offload these files to a CDN unless the CDN is configured to send
-      `Cross-Origin-Resource-Policy: same-origin` (or `cross-origin`) on every response
+- [ ] Do NOT offload these files to a CDN unless the CDN proxies them under the app's own origin
 
 ### Nginx example (if assets served from same server)
+
 No extra config needed — Nginx serves the files as-is, same origin as the app.
 MIME type for `.wasm`: Nginx 1.25+ includes it by default. For older Nginx:
+
 ```nginx
 types {
     application/wasm wasm;
 }
 ```
 
-### CDN/edge hosting example (if you MUST use a CDN for static assets)
-Ensure the CDN passes through or injects:
-```
-Cross-Origin-Resource-Policy: same-origin
-```
-on responses for `*.wasm` and `*.js` files under `/ffmpeg/`. Otherwise, use same-origin
-hosting for the ffmpeg assets and CDN only for other static files.
+### CDN/edge hosting example
+
+If you use a CDN for static assets, keep the ffmpeg assets on the **same-origin server** (not on
+the CDN). Only offload other static files (images, JS chunks, CSS) to the CDN.
+
+---
+
+## Dev server
+
+No special headers needed for `npm run dev` or `npm run preview`. The Vite dev server does not
+set COOP/COEP (they were removed in T-W06).
