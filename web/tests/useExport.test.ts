@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import fs from 'fs'
+import path from 'path'
 import { renderHook, act } from '@testing-library/react'
 import { useExport, exportToMp4, _resetFfmpegInstance } from '../src/hooks/useExport'
 
@@ -91,6 +93,35 @@ describe('useExport', () => {
     const url = URL.createObjectURL(exportResult.blob)
     expect(url).toBe(mockUrl)
     expect(exportResult.filename).toMatch(/\.mp4$/)
+  })
+})
+
+// T-W04: Reproduce-first — ffmpeg CDN COEP hang guard
+// This test MUST FAIL while baseURL still points to unpkg.com.
+// It MUST PASS only after the fix sets baseURL to a same-origin path ('/ffmpeg').
+describe('ffmpeg loader — same-origin guard (T-W04)', () => {
+  it('ffmpeg core must NOT be loaded from a cross-origin CDN (prevents COEP freeze)', () => {
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../src/hooks/useExport.ts'),
+      'utf-8'
+    )
+
+    const CDN_PATTERNS = [
+      'unpkg.com',
+      'cdn.jsdelivr.net',
+      'cdnjs.cloudflare.com',
+      'fastly.net',
+      'skypack.dev',
+    ]
+
+    for (const cdn of CDN_PATTERNS) {
+      expect(source, `baseURL must not reference CDN: ${cdn}`).not.toContain(cdn)
+    }
+
+    // Also assert the self-hosted same-origin path is used
+    expect(source, "baseURL must use same-origin path '/ffmpeg'").toMatch(
+      /baseURL\s*=\s*['"`]\/ffmpeg['"`]/
+    )
   })
 })
 
