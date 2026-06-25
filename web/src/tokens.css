@@ -1,0 +1,69 @@
+/* Cinema Bright design tokens — NeoStopMotion */
+/* Source: docs/03-codebase/design/tokens.md */
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap');
+
+:root {
+  /* Background */
+  --color-bg-base: #0F1923;
+  --color-bg-surface: #1A2733;
+  --color-bg-elevated: #243342;
+  --color-bg-preview: #0A1219;
+
+  /* Accent */
+  --color-accent-capture: #FF6B35;
+  --color-accent-capture-deep: #FF4500;
+  --color-accent-capture-glow: rgba(255, 107, 53, 0.35);
+  --color-accent-capture-glow-active: rgba(255, 107, 53, 0.55);
+  --color-accent-success: #34C759;
+  --color-accent-info: #0A84FF;
+  --color-accent-warn: #FFD60A;
+  --color-accent-warn-dark: #7A6200;
+
+  /* Text */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #8E9BAA;
+  --color-text-disabled: #4A5A6B;
+  --color-text-on-warn: #3A2E00;
+
+  /* Border */
+  --color-border-subtle: #2D3E4F;
+  --color-border-focus: #FF6B35;
+  --color-border-active: rgba(255, 255, 255, 0.15);
+
+  /* Status */
+  --color-error: #FF453A;
+  --color-error-surface: #2D1A1A;
+  --color-live-dot: #FF453A;
+  --color-thumb-selected: #FF6B35;
+  --color-flash-capture: rgba(255, 255, 255, 0.85);
+
+  /* Border radius */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 40px;
+  --space-2xl: 64px;
+
+  /* Typography */
+  --font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+  --typ-display: 64px;
+  --typ-heading: 32px;
+  --typ-body: 20px;
+  --typ-body-sm: 18px;
+  --typ-caption: 15px;
+  --typ-caption-sm: 13px;
+
+  /* Motion */
+  --motion-fast: 80ms ease-out;
+  --motion-normal: 200ms ease-out;
+  --motion-slow: 280ms ease-out;
+  --motion-spring: 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}

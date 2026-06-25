@@ -1,0 +1,71 @@
+.card {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  border: 1.5px solid var(--color-border-subtle);
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  margin-bottom: var(--space-sm);
+}
+
+.seg {
+  display: flex;
+  background: var(--color-bg-elevated);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  gap: 3px;
+}
+
+.segBtn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: 11px;
+  padding: 8px 4px;
+  font-family: var(--font-family);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  text-align: center;
+  transition: all 100ms;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.segBtn:not(.active):hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-primary);
+}
+
+.segBtn.active {
+  background: var(--color-accent-capture);
+  color: white;
+  box-shadow: 0 4px 10px var(--color-accent-capture-glow);
+}
+
+.emoji {
+  font-size: 16px;
+}
+
+.key {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-size: 9px;
+  font-weight: 900;
+  color: var(--color-text-disabled);
+}
+
+.segBtn.active .key {
+  color: rgba(255, 255, 255, 0.5);
+}

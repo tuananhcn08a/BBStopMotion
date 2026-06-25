@@ -1,0 +1,123 @@
+.wrap {
+  flex-shrink: 0;
+  padding: 10px var(--space-md) var(--space-sm);
+  background: var(--color-bg-surface);
+  border-top: 1.5px solid var(--color-border-subtle);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+}
+
+.pill {
+  background: rgba(255, 214, 10, 0.15);
+  color: var(--color-accent-warn);
+  font-size: 11px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+
+.filmstrip {
+  display: flex;
+  gap: 6px;
+  height: 72px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-subtle) transparent;
+}
+
+.thumb {
+  flex: 0 0 100px;
+  height: 68px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  border: 2.5px solid transparent;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 150ms;
+  overflow: hidden;
+}
+
+.thumb:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.04);
+}
+
+.thumb.selected {
+  border-color: var(--color-thumb-selected);
+  transform: scale(1.05);
+  box-shadow: 0 5px 16px var(--color-accent-capture-glow);
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: calc(var(--radius-md) - 2px);
+}
+
+.thumbNum {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--color-text-secondary);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.thumb.selected .thumbNum {
+  color: var(--color-accent-capture);
+}
+
+.emptySlot {
+  flex: 0 0 100px;
+  height: 68px;
+  border-radius: var(--radius-md);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--color-bg-elevated),
+    var(--color-bg-elevated) 5px,
+    var(--color-bg-surface) 5px,
+    var(--color-bg-surface) 10px
+  );
+  border: 1.5px dashed var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  color: var(--color-text-disabled);
+}
+
+.emptyPlus {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.emptyNum {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--color-text-disabled);
+  opacity: 0.4;
+}
