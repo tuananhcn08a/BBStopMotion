@@ -103,6 +103,16 @@
   color: var(--color-text-secondary);
 }
 
+/* Parent notice below the QR — small, non-alarming */
+.parentNotice {
+  font-size: var(--typ-caption);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  max-width: 260px;
+  line-height: 1.4;
+  text-align: center;
+}
+
 .actions {
   display: flex;
   flex-direction: column;

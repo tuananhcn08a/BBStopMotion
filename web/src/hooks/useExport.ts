@@ -2,18 +2,28 @@ import { useCallback, useState } from 'react'
 import type { FFmpeg } from '@ffmpeg/ffmpeg'
 import { CapturedFrame, ExportResult, FpsLevel, FPS_VALUES } from '../types'
 
-// Upload endpoint — devops will implement this. See DEVOPS_INTERFACE.md
-const UPLOAD_ENDPOINT = import.meta.env.VITE_UPLOAD_ENDPOINT ?? ''
+interface NasUploadResponse {
+  ok: boolean
+  download_url: string
+  expires_at: string   // ISO-8601
+}
 
-async function uploadFile(blob: Blob, filename: string): Promise<string> {
-  if (!UPLOAD_ENDPOINT) throw new Error('Upload endpoint not configured')
+// NAS upload endpoint and token are read inside uploadFile (not captured at module level)
+// so that vi.stubEnv() can override them in tests and Vite still replaces them at build time.
+// Set VITE_UPLOAD_ENDPOINT + VITE_UPLOAD_TOKEN in .env.local — never commit real values.
+async function uploadFile(blob: Blob, filename: string): Promise<{ downloadUrl: string; expiresAt: string }> {
+  const endpoint = import.meta.env.VITE_UPLOAD_ENDPOINT ?? ''
+  const token = import.meta.env.VITE_UPLOAD_TOKEN ?? ''
+  if (!endpoint) throw new Error('Upload endpoint not configured')
   const form = new FormData()
   form.append('file', blob, filename)
   form.append('filename', filename)
-  const res = await fetch(UPLOAD_ENDPOINT, { method: 'POST', body: form })
+  const headers: HeadersInit = {}
+  if (token) headers['X-Upload-Token'] = token
+  const res = await fetch(endpoint, { method: 'POST', body: form, headers })
   if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
-  const data = await res.json() as { url: string }
-  return data.url
+  const data = await res.json() as NasUploadResponse
+  return { downloadUrl: data.download_url, expiresAt: data.expires_at }
 }
 
 // Module-level cache: ffmpeg instance is lazy-loaded once and reused
@@ -87,15 +97,18 @@ export function useExport(): UseExportReturn {
       const filename = `phim-cua-con-${Date.now()}.mp4`
 
       let uploadUrl: string | undefined
+      let expiresAt: string | undefined
       let uploadError: string | undefined
 
       try {
-        uploadUrl = await uploadFile(blob, filename)
+        const uploaded = await uploadFile(blob, filename)
+        uploadUrl = uploaded.downloadUrl
+        expiresAt = uploaded.expiresAt
       } catch (err) {
         uploadError = err instanceof Error ? err.message : 'Upload thất bại'
       }
 
-      return { blob, filename, uploadUrl, uploadError }
+      return { blob, filename, uploadUrl, expiresAt, uploadError }
     } finally {
       setIsExporting(false)
       setProgressMessage('')

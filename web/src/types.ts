@@ -32,6 +32,7 @@ export interface ExportResult {
   blob: Blob
   filename: string
   uploadUrl?: string
+  expiresAt?: string   // ISO-8601, from NAS upload response
   uploadError?: string
 }
 

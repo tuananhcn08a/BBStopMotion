@@ -8,6 +8,16 @@ interface Props {
   onNewFilm: () => void
 }
 
+/** Format an ISO-8601 date string to a friendly Vietnamese date, e.g. "3/7/2026". */
+function formatExpiryDate(iso: string): string {
+  try {
+    const d = new Date(iso)
+    return d.toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric', year: 'numeric' })
+  } catch {
+    return ''
+  }
+}
+
 export default function SuccessScreen({ result, onNewFilm }: Props) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
@@ -46,6 +56,7 @@ export default function SuccessScreen({ result, onNewFilm }: Props) {
 
   const hasUpload = Boolean(result.uploadUrl)
   const hasError = Boolean(result.uploadError)
+  const expiryLabel = result.expiresAt ? formatExpiryDate(result.expiresAt) : ''
 
   return (
     <div className={styles.screen}>
@@ -74,6 +85,11 @@ export default function SuccessScreen({ result, onNewFilm }: Props) {
           <div className={styles.qrWrap}>
             <img src={qrDataUrl} alt="QR code để tải phim" className={styles.qr} />
             <p className={styles.qrHint}>Quét để xem phim trên điện thoại</p>
+            {/* Parent notice — PO requirement (AC2) */}
+            <p className={styles.parentNotice} data-testid="parent-notice">
+              Phim lưu tạm <strong>7 ngày</strong>
+              {expiryLabel ? ` (đến ${expiryLabel})` : ''}, chỉ người có mã QR này mới tải được.
+            </p>
           </div>
         )}
 

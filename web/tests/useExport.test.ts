@@ -33,13 +33,21 @@ describe('useExport', () => {
     vi.clearAllMocks()
     // Reset the module-level ffmpegInstance so each test gets a fresh FFmpeg load
     _resetFfmpegInstance()
+    // Restore env stubs between tests
+    vi.unstubAllEnvs()
   })
 
   // TS-04: Export succeeds — blob is MP4, filename ends .mp4
   it('TS-04: exportVideo resolves with MP4 blob and .mp4 filename on success', async () => {
+    vi.stubEnv('VITE_UPLOAD_ENDPOINT', 'https://bb-share.bapbean.com/api/upload')
+    vi.stubEnv('VITE_UPLOAD_TOKEN', 'test-token')
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ url: 'https://example.com/film.mp4' }),
+      json: () => Promise.resolve({
+        ok: true,
+        download_url: 'https://bb-share.bapbean.com/files/2026-06-26/abc123/movie.mp4',
+        expires_at: '2026-07-03T00:00:00Z',
+      }),
     }))
 
     const { result } = renderHook(() => useExport())
@@ -53,10 +61,14 @@ describe('useExport', () => {
     expect(exportResult.blob).toBeInstanceOf(Blob)
     expect(exportResult.blob.type).toBe('video/mp4')
     expect(exportResult.filename).toMatch(/phim-cua-con-.*\.mp4$/)
+    // NAS contract: uploadUrl comes from download_url, expiresAt from expires_at
+    expect(exportResult.uploadUrl).toBe('https://bb-share.bapbean.com/files/2026-06-26/abc123/movie.mp4')
+    expect(exportResult.expiresAt).toBe('2026-07-03T00:00:00Z')
   })
 
   // TS-10: Upload fails — degraded success (blob still present, local download available)
   it('TS-10: export succeeds but upload fails → uploadError set, blob still present (graceful degradation)', async () => {
+    vi.stubEnv('VITE_UPLOAD_ENDPOINT', 'https://bb-share.bapbean.com/api/upload')
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')))
 
     const { result } = renderHook(() => useExport())
@@ -73,8 +85,35 @@ describe('useExport', () => {
     expect(exportResult.uploadUrl).toBeUndefined()
   })
 
+  // AC1: upload request includes X-Upload-Token header when VITE_UPLOAD_TOKEN is set
+  it('AC1-NAS: uploadFile sends X-Upload-Token header to NAS endpoint', async () => {
+    vi.stubEnv('VITE_UPLOAD_ENDPOINT', 'https://bb-share.bapbean.com/api/upload')
+    vi.stubEnv('VITE_UPLOAD_TOKEN', 'secret-test-token')
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        ok: true,
+        download_url: 'https://bb-share.bapbean.com/files/2026-06-26/abc123/movie.mp4',
+        expires_at: '2026-07-03T00:00:00Z',
+      }),
+    })
+    vi.stubGlobal('fetch', mockFetch)
+
+    const { result } = renderHook(() => useExport())
+    const frames = makeFrames(5)
+    await act(async () => {
+      await result.current.exportVideo(frames, 'normal')
+    })
+
+    expect(mockFetch).toHaveBeenCalled()
+    const [url, initArg] = mockFetch.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('https://bb-share.bapbean.com/api/upload')
+    expect((initArg?.headers as Record<string, string>)?.['X-Upload-Token']).toBe('secret-test-token')
+  })
+
   // TS-12: Download filename ends with .mp4, URL.createObjectURL works
   it('TS-12: URL.createObjectURL callable with MP4 blob, filename ends .mp4', async () => {
+    vi.stubEnv('VITE_UPLOAD_ENDPOINT', 'https://bb-share.bapbean.com/api/upload')
     const mockUrl = 'blob:http://localhost/test-123'
     vi.stubGlobal('URL', {
       createObjectURL: vi.fn().mockReturnValue(mockUrl),
