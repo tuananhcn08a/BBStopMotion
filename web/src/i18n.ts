@@ -22,8 +22,10 @@ export const STRINGS = {
     vi: 'Đã đạt mục tiêu, con vẫn có thể chụp thêm nếu muốn!',
     en: 'Goal reached — keep going if you like!',
   },
-  'progress.remaining': { vi: 'Chụp thêm', en: '' },
-  'progress.remainingSuffix': { vi: 'nữa là phim đủ mượt!', en: '' },
+  // Redline: "không có bản EN riêng" cho câu động viên VN gốc — BA suy diễn thêm bản EN để
+  // language='en' không hiện chuỗi rỗng (tránh câu bị cụt khi chuyển hẳn sang tiếng Anh).
+  'progress.remaining': { vi: 'Chụp thêm', en: 'Capture' },
+  'progress.remainingSuffix': { vi: 'nữa là phim đủ mượt!', en: 'more for a smooth movie!' },
   'thingbot.title': { vi: 'ThingBot', en: 'ThingBot' },
   'thingbot.connected': { vi: 'Đã kết nối', en: 'Connected' },
   'thingbot.disconnected': { vi: 'Chưa kết nối', en: 'Not connected' },
@@ -42,7 +44,10 @@ export const STRINGS = {
   'capture.btn': { vi: 'CHỤP', en: 'Snap' },
   'action.play': { vi: 'Xem lại phim', en: 'Play' },
   'action.undo': { vi: 'Xoá frame cuối', en: 'Undo' },
-  'action.export': { vi: 'Xuất phim!', en: 'Export!' },
+  // Redline 2a literal mockup text: "🎬 Xuất phim! · Export" (KHÔNG có "!" sau Export — khác
+  // spec.md §6 copy table ghi "Export!"). Giữ đúng mockup vì cột hành động cố định 250px —
+  // thêm "!" khiến "Xuất phim! · Export!" tràn dòng (bug T-BS11, phát hiện khi tự re-gate 2a).
+  'action.export': { vi: 'Xuất phim!', en: 'Export' },
   'filmstrip.title': { vi: 'CÁC FRAME ĐÃ CHỤP', en: 'CAPTURED FRAMES' },
   'filmstrip.hint': {
     vi: 'Rê chuột lên frame để xem lại hoặc xoá frame bất kỳ',
@@ -83,7 +88,8 @@ export const STRINGS = {
     en: 'Oops, something went wrong creating the movie. Try again!',
   },
   'welcome.title': { vi: 'Chào mừng đến xưởng phim!', en: 'Welcome to the movie studio!' },
-  'welcome.cta': { vi: 'Bắt đầu làm phim! 🚀', en: 'Start making a movie! 🚀' },
+  // Redline 1d literal: "Bắt đầu làm phim! · Start 🚀" — emoji render riêng ở component (WelcomeScreen.tsx).
+  'welcome.cta': { vi: 'Bắt đầu làm phim!', en: 'Start' },
   'library.search': { vi: 'Tìm phim theo tên...', en: 'Search movies by name...' },
   'library.filterAll': { vi: 'Tất cả', en: 'All' },
   'library.filterToday': { vi: 'Hôm nay', en: 'Today' },
@@ -133,4 +139,14 @@ export function label(language: Language, key: StringKey): LabelParts {
 /** Tiện ích lấy riêng main text (dùng khi không cần hậu tố EN, vd aria-label). */
 export function mainText(language: Language, key: StringKey): string {
   return label(language, key).main
+}
+
+/**
+ * Chuỗi phẳng "VN · EN" (hoặc chỉ main nếu không có sub) — dùng cho chỗ không thể chèn
+ * `<span>` con (vd `placeholder`, `aria-label`, `alt`) nhưng vẫn cần đủ 2 ngôn ngữ ở mode
+ * 'vi+en' theo đúng redline (nguồn gốc bug T-BS11: nơi dùng `.main` một mình sẽ NUỐT phần EN).
+ */
+export function bilingualText(language: Language, key: StringKey, sep = ' · '): string {
+  const { main, sub } = label(language, key)
+  return sub ? `${main}${sep}${sub}` : main
 }

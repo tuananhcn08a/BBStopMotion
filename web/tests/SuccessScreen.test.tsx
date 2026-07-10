@@ -107,4 +107,49 @@ describe('SuccessScreen — auto-upload OFF (F8/TS-BS-28)', () => {
     )
     expect(screen.getByLabelText('Tải phim về máy')).toBeInTheDocument()
   })
+
+  // ─── T-BS11 (QA gate-web-report.md) — bilingual "VN · EN" không bị nuốt EN ───────────
+
+  it('T-BS11: nút Tải về máy / Làm phim mới hiện cả VN lẫn EN', () => {
+    render(
+      <SuccessScreen
+        result={makeResult()}
+        onNewFilm={vi.fn()}
+        language="vi+en"
+        frameCount={10}
+        durationSeconds={2}
+        autoUpload={false}
+      />
+    )
+    expect(screen.getByLabelText('Tải phim về máy')).toHaveTextContent('Download')
+    expect(screen.getByLabelText(/Làm phim mới/)).toHaveTextContent('New film')
+  })
+
+  it('T-BS11: subtitle hiện tiền tố EN "Your movie is ready" khi language != vi', () => {
+    render(
+      <SuccessScreen
+        result={makeResult()}
+        onNewFilm={vi.fn()}
+        language="vi+en"
+        frameCount={10}
+        durationSeconds={2}
+        autoUpload={false}
+      />
+    )
+    expect(screen.getByText(/Your movie is ready/)).toBeInTheDocument()
+  })
+
+  it('T-BS11: subtitle KHÔNG hiện tiền tố EN khi language = vi (F4: ẩn hoàn toàn EN)', () => {
+    render(
+      <SuccessScreen
+        result={makeResult()}
+        onNewFilm={vi.fn()}
+        language="vi"
+        frameCount={10}
+        durationSeconds={2}
+        autoUpload={false}
+      />
+    )
+    expect(screen.queryByText(/Your movie is ready/)).not.toBeInTheDocument()
+  })
 })

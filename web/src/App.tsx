@@ -11,32 +11,48 @@ import SuccessScreen from './components/SuccessScreen'
 import LibraryScreen from './components/LibraryScreen'
 import SettingsScreen from './components/SettingsScreen'
 import { useExport, uploadExportedFile } from './hooks/useExport'
-import { readGateFixtureParam, buildGateFrames, buildGateExportResult } from './lib/gateFixture'
+import {
+  readGateFixtureParam, buildGateFrames, buildGateExportResult, buildGateLibraryEntries,
+} from './lib/gateFixture'
 import styles from './App.module.css'
 
-// Visual Diff Gate fixture (T-BS10 AC4) — xem src/lib/gateFixture.ts. Đọc 1 lần lúc module
-// load; không có ?gate=... thì luôn null và app chạy y hệt luồng thật.
+// Visual Diff Gate fixture (T-BS10 AC4 / T-BS11) — xem src/lib/gateFixture.ts. Đọc 1 lần lúc
+// module load; không có ?gate=... thì luôn null và app chạy y hệt luồng thật.
 const GATE_FIXTURE = readGateFixtureParam()
 
 function App() {
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings())
   const [welcomeSeen, setWelcomeSeen] = useState(() => GATE_FIXTURE !== null) // F6 — KHÔNG persist qua session mới
-  const [screen, setScreen] = useState<Screen>('capture')
+  const [screen, setScreen] = useState<Screen>(() => (GATE_FIXTURE === 'library' ? 'library' : 'capture'))
   const [onionEnabled, setOnionEnabled] = useState(true)
 
-  const [appState, setAppState] = useState<AppState>(() => (GATE_FIXTURE === 'success' ? 'SUCCESS' : 'CAPTURING'))
-  const [frames, setFrames] = useState<CapturedFrame[]>(() => (GATE_FIXTURE === 'capture' ? buildGateFrames(18) : []))
+  const [appState, setAppState] = useState<AppState>(() => {
+    if (GATE_FIXTURE === 'success') return 'SUCCESS'
+    if (GATE_FIXTURE === 'exporting') return 'EXPORTING'
+    return 'CAPTURING'
+  })
+  const [frames, setFrames] = useState<CapturedFrame[]>(() => {
+    if (GATE_FIXTURE === 'capture') return buildGateFrames(18)
+    if (GATE_FIXTURE === 'exporting') return buildGateFrames(42) // khớp step chip "✓ Chụp · 42 frame" mockup 2b
+    if (GATE_FIXTURE === 'disabled') return buildGateFrames(3) // < MIN_FRAMES_TO_EXPORT — mockup 2d state 1
+    return []
+  })
   const [fpsLevel, setFpsLevel] = useState<FpsLevel>(settings.defaultFpsLevel)
   const [exportResult, setExportResult] = useState<ExportResult | null>(() => (GATE_FIXTURE === 'success' ? buildGateExportResult() : null))
   const [exportDuration, setExportDuration] = useState(() => (GATE_FIXTURE === 'success' ? 4.2 : 0))
   const [exportFrameCount, setExportFrameCount] = useState(() => (GATE_FIXTURE === 'success' ? 42 : 0))
   const [exportError, setExportError] = useState<string | null>(null)
 
-  const [libraryEntries, setLibraryEntries] = useState<LibraryEntry[]>([])
+  const [libraryEntries, setLibraryEntries] = useState<LibraryEntry[]>(() => (
+    GATE_FIXTURE === 'library' ? buildGateLibraryEntries() : []
+  ))
   const [uploadingId, setUploadingId] = useState<string | null>(null)
   const blobCacheRef = useRef<Map<string, Blob>>(new Map())
 
-  const { exportVideo, progress } = useExport()
+  const { exportVideo, progress: liveExportProgress } = useExport()
+  // ?gate=exporting — đóng băng progress ở 62% (khớp mockup 2b "✓ Ghép MP4 / ● Tạo GIF...")
+  // thay vì progress thật của useExport() (chỉ tồn tại trong lúc gọi exportVideo() thật).
+  const progress = GATE_FIXTURE === 'exporting' ? { stage: 'gif' as const, percent: 62 } : liveExportProgress
 
   // Persist settings (F2/F3/F4/F8 — TS-BS-27)
   useEffect(() => {
@@ -48,8 +64,10 @@ function App() {
     if (settings.onionSkinOpacity === 0) setOnionEnabled(false)
   }, [settings.onionSkinOpacity])
 
-  // Load Library metadata from IndexedDB on mount (F7/Q6a)
+  // Load Library metadata from IndexedDB on mount (F7/Q6a) — bỏ qua khi đang ở gate fixture để
+  // không ghi đè dữ liệu mẫu đã seed sẵn (buildGateLibraryEntries()).
   useEffect(() => {
+    if (GATE_FIXTURE) return
     listLibraryEntries().then(setLibraryEntries).catch(() => { /* IndexedDB unavailable — Library trống */ })
   }, [])
 
@@ -168,7 +186,7 @@ function App() {
         frameCount={frames.length}
         goalFrames={settings.goalFrames}
       />
-      <div className={styles.main}>
+      <div className={styles.main} data-landmark="main">
         {screen === 'capture' && appState === 'CAPTURING' && (
           <CaptureScreen
             frames={frames}
@@ -180,6 +198,8 @@ function App() {
             onionOpacity={settings.onionSkinOpacity}
             onionEnabled={onionEnabled}
             setOnionEnabled={setOnionEnabled}
+            forcedCameraState={GATE_FIXTURE === 'denied' ? 'denied' : undefined}
+            initialExportError={GATE_FIXTURE === 'disabled' ? label(settings.language, 'states.minFrames').main : null}
           />
         )}
         {screen === 'capture' && appState === 'EXPORTING' && (

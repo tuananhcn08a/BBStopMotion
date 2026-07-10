@@ -1,5 +1,5 @@
 import { Language, Screen } from '../types'
-import { label } from '../i18n'
+import { label, bilingualText } from '../i18n'
 import styles from './Sidebar.module.css'
 
 interface Props {
@@ -68,7 +68,10 @@ export default function Sidebar({ screen, onNavigate, variant, locked, language,
       {variant === 'full' && (
         <>
           <div className={styles.progressCard} data-landmark="progress-card">
-            <div className={styles.progressLabel}>{label(language, 'progress.label').main}</div>
+            <div className={styles.progressLabel}>
+              {label(language, 'progress.label').main}
+              {label(language, 'progress.label').sub ? ` · ${label(language, 'progress.label').sub}` : ''}
+            </div>
             <div className={styles.progressNum} data-testid="goal-progress-num">
               {frameCount} <span className={styles.progressGoal}>/ {goalFrames} {label(language, 'progress.frameUnit').main}</span>
             </div>
@@ -92,7 +95,7 @@ export default function Sidebar({ screen, onNavigate, variant, locked, language,
 
       {variant === 'full' && (
         <button type="button" className={styles.helpItem} disabled={locked}>
-          <span>❓</span> {label(language, 'nav.help').main}
+          <span>❓</span> {bilingualText(language, 'nav.help')}
         </button>
       )}
     </div>

@@ -364,4 +364,14 @@ describe('CaptureScreen — camera inline states', () => {
     expect(filmstrip.querySelectorAll('[data-testid^="thumb-"]')).toHaveLength(0)
     expect(screen.getByLabelText('Slot frame tiếp theo')).toHaveTextContent('1')
   })
+
+  // ─── T-BS11 (QA gate-web-report.md) — action buttons bilingual "VN · EN" ─────────────
+
+  it('T-BS11: action buttons (Xem lại phim/Xoá frame cuối/Xuất phim!) hiện cả VN lẫn EN', () => {
+    useCameraMock.mockReturnValue(makeCameraMock('live'))
+    renderCaptureScreen(makeFrames(5))
+    expect(screen.getByLabelText(/Xem lại phim/i)).toHaveTextContent('Play')
+    expect(screen.getByLabelText(/Xoá frame cuối/i)).toHaveTextContent('Undo')
+    expect(screen.getByLabelText(/Xuất phim/i)).toHaveTextContent('Export')
+  })
 })

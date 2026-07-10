@@ -1,5 +1,5 @@
 import { AppSettings, FpsLevel, GOAL_FRAMES_OPTIONS, Language } from '../types'
-import { label } from '../i18n'
+import { label, bilingualText } from '../i18n'
 import styles from './SettingsScreen.module.css'
 
 interface Props {
@@ -30,12 +30,18 @@ function Toggle({ checked, onChange, testId }: { checked: boolean; onChange: (v:
 
 export default function SettingsScreen({ settings, onChange }: Props) {
   const language = settings.language
+  const titleLabel = label(language, 'settings.title')
+  const subtitleLabel = label(language, 'settings.subtitle')
+  // Redline 1h literal: "Cài đặt · Settings (dành cho Thợ Cả)" — title.sub ("Settings") PHẢI
+  // ghép cùng subtitle, không được nuốt (bug T-BS11 #2 — QA phát hiện qua overlay bằng mắt,
+  // Δ hình học không bắt được vì đây là 1 khối span, không đổi kích thước khung ngoài).
+  const titleSecondary = [titleLabel.sub, subtitleLabel.main].filter(Boolean).join(' ')
 
   return (
     <div data-landmark="settings-screen">
       <div className={styles.title}>
-        {label(language, 'settings.title').main}{' '}
-        <span className={styles.titleSub}>· {label(language, 'settings.subtitle').main}</span>
+        {titleLabel.main}{' '}
+        {titleSecondary && <span className={styles.titleSub}>· {titleSecondary}</span>}
       </div>
 
       <div className={styles.card} style={{ marginTop: 14 }}>
@@ -93,7 +99,7 @@ export default function SettingsScreen({ settings, onChange }: Props) {
         <div className={styles.row}>
           <span className={styles.iconChip}>🌐</span>
           <div className={styles.rowText}>
-            <div className={styles.rowName}>{label(language, 'settings.language').main}</div>
+            <div className={styles.rowName}>{bilingualText(language, 'settings.language')}</div>
             <div className={styles.rowDesc}>Hiển thị song ngữ hoặc một ngôn ngữ</div>
           </div>
           <div className={styles.segmented}>

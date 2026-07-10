@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Language, LibraryEntry } from '../types'
-import { label } from '../i18n'
+import { label, bilingualText } from '../i18n'
 import { matchesSearch } from '../lib/text'
 import styles from './LibraryScreen.module.css'
 
@@ -77,10 +77,10 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
           🔍
           <input
             type="text"
-            placeholder={label(language, 'library.search').main}
+            placeholder={bilingualText(language, 'library.search')}
             value={query}
             onChange={e => setQuery(e.target.value)}
-            aria-label={label(language, 'library.search').main}
+            aria-label={bilingualText(language, 'library.search')}
             data-testid="library-search"
           />
         </div>
@@ -111,17 +111,34 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
             {groupEntries.map(entry => {
               const hasUpload = Boolean(entry.uploadUrl)
               const isUploading = uploadingId === entry.id
+              // Index toàn cục (không phải index trong nhóm) — khớp thứ tự hiển thị top-to-bottom
+              // để đặt tên landmark `library-row-{i}-*` nhất quán với mockup khi so bằng Visual Diff Gate.
+              const rowIndex = filtered.indexOf(entry)
+              const metaPrefix = entry.childName ? `${entry.childName} · ` : ''
               return (
-                <div className={styles.row} key={entry.id} data-testid={`library-row-${entry.id}`}>
-                  <img src={entry.thumbnailDataUrl} alt={entry.title} className={styles.thumb} />
+                <div
+                  className={styles.row}
+                  key={entry.id}
+                  data-testid={`library-row-${entry.id}`}
+                  data-landmark={`library-row-${rowIndex}`}
+                >
+                  <img
+                    src={entry.thumbnailDataUrl}
+                    alt={entry.title}
+                    className={styles.thumb}
+                    data-landmark={`library-row-${rowIndex}-thumb`}
+                  />
                   <div className={styles.info}>
-                    <div className={styles.filmTitle}>{entry.title}</div>
-                    <div className={styles.meta}>
-                      {entry.frameCount} frame · {entry.durationSeconds.toFixed(1)}s ·{' '}
+                    <div className={styles.filmTitle} data-landmark={`library-row-${rowIndex}-title`}>{entry.title}</div>
+                    <div className={styles.meta} data-landmark={`library-row-${rowIndex}-meta`}>
+                      {metaPrefix}{entry.frameCount} frame · {entry.durationSeconds.toFixed(1)}s ·{' '}
                       {new Date(entry.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
-                  <span className={`${styles.badge} ${hasUpload ? styles.badgeUploaded : styles.badgeNotUploaded}`}>
+                  <span
+                    className={`${styles.badge} ${hasUpload ? styles.badgeUploaded : styles.badgeNotUploaded}`}
+                    data-landmark={`library-row-${rowIndex}-badge`}
+                  >
                     {hasUpload ? `✓ ${label(language, 'library.uploaded').main}` : `⚠ ${label(language, 'library.notUploaded').main}`}
                   </span>
                   {hasUpload ? (
@@ -136,7 +153,12 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
                       {isUploading ? '...' : `↻ ${label(language, 'library.upload').main}`}
                     </button>
                   )}
-                  <button className={styles.btnPrimary} onClick={() => onPlay(entry)} data-testid={`play-${entry.id}`}>
+                  <button
+                    className={styles.btnPrimary}
+                    onClick={() => onPlay(entry)}
+                    data-testid={`play-${entry.id}`}
+                    data-landmark={`library-row-${rowIndex}-btn`}
+                  >
                     ▶ {label(language, 'library.play').main}
                   </button>
                   <div className={styles.menuWrap}>

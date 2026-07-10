@@ -118,6 +118,11 @@ export function useExport(): UseExportReturn {
       setProgress({ stage: 'gif', percent: 48 })
       await sleep(150)
       setProgress({ stage: 'gif', percent: 62 })
+      // Bug T-BS11 (QA phát hiện): thiếu `await` giữa 2 setProgress liên tiếp khi autoUpload=false
+      // khiến React batch 2 lần setState cùng tick — 62% ("✓ Ghép MP4 / ● Tạo GIF...", khớp mockup
+      // 2b) KHÔNG BAO GIỜ thực sự render, app nhảy thẳng 48%→100%. Thêm await ở đây để 62% luôn
+      // có ít nhất 1 khung hình render trước khi qua bước kế tiếp, dù có autoUpload hay không.
+      await sleep(150)
 
       let uploadUrl: string | undefined
       let expiresAt: string | undefined

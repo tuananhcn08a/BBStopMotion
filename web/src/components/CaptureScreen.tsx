@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { CapturedFrame, FpsLevel, FPS_VALUES, MIN_FRAMES_TO_EXPORT, FPS_KEYS, Language } from '../types'
-import { label } from '../i18n'
-import { useCamera } from '../hooks/useCamera'
+import { label, bilingualText } from '../i18n'
+import { useCamera, CameraState } from '../hooks/useCamera'
 import { useCapture } from '../hooks/useCapture'
 import OnionSkin from './OnionSkin'
 import Filmstrip from './Filmstrip'
@@ -19,6 +19,13 @@ interface Props {
   onionOpacity: number
   onionEnabled: boolean
   setOnionEnabled: (enabled: boolean) => void
+  /** Visual Diff Gate only (T-BS11) — ép hiển thị 1 camera state tĩnh (denied/no-device) để
+   *  chụp mockup 2d state 2, bất kể hook useCamera() thật đang ở state nào. Không set thì
+   *  chạy y hệt luồng thật. Xem `src/lib/gateFixture.ts`. */
+  forcedCameraState?: CameraState
+  /** Visual Diff Gate only (T-BS11) — giá trị exportError khởi tạo, để chụp mockup 2d state 1
+   *  (nút Xuất disabled + toast cảnh báo cùng lúc) mà không cần bấm Enter thật. */
+  initialExportError?: string | null
 }
 
 // SVG icon for camera-off state
@@ -29,14 +36,18 @@ function CameraOffIcon() {
 export default function CaptureScreen({
   frames, setFrames, fpsLevel, setFpsLevel, onExport,
   language, onionOpacity, onionEnabled, setOnionEnabled,
+  forcedCameraState, initialExportError = null,
 }: Props) {
-  const { videoRef, state, stream, devices, activeDeviceId, requestCamera, switchCamera, error } = useCamera()
+  const { videoRef, state: liveCameraState, stream, devices, activeDeviceId, requestCamera, switchCamera, error } = useCamera()
+  // Gate fixture override (xem Props.forcedCameraState) — mọi logic dưới đây dùng chung biến
+  // `state` như cũ, không phân nhánh thêm, nên hành vi thật (không truyền prop) không đổi.
+  const state = forcedCameraState ?? liveCameraState
   const { captureFrame, deleteFrameAt, getOnionSkinFrame } = useCapture()
 
   const [isFlashing, setIsFlashing] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [previewIndex, setPreviewIndex] = useState(0)
-  const [exportError, setExportError] = useState<string | null>(null)
+  const [exportError, setExportError] = useState<string | null>(initialExportError)
   const previewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Attach stream to video element
@@ -289,7 +300,7 @@ export default function CaptureScreen({
           opacity={onionOpacity}
         />
 
-        {isFlashing && <div className={styles.flash} aria-hidden="true" />}
+        {isFlashing && <div className={styles.flash} aria-hidden="true" data-testid="capture-flash" />}
 
         <div className={styles.frameCounter} data-landmark="frame-counter">
           <div className={styles.frameNum}>{frames.length}</div>
@@ -346,7 +357,7 @@ export default function CaptureScreen({
             disabled={frames.length < 2}
             aria-disabled={frames.length < 2}
           >
-            {isPreviewMode ? '⏸' : '▶'} {label(language, 'action.play').main}
+            {isPreviewMode ? '⏸' : '▶'} {bilingualText(language, 'action.play')}
             <span className={styles.actionRight}>P</span>
           </button>
 
@@ -357,7 +368,7 @@ export default function CaptureScreen({
             disabled={frames.length === 0}
             aria-disabled={frames.length === 0}
           >
-            🗑 {label(language, 'action.undo').main}
+            🗑 {bilingualText(language, 'action.undo')}
             <span className={styles.actionRight}>Del</span>
           </button>
 
@@ -367,7 +378,7 @@ export default function CaptureScreen({
             aria-label="Xuất phim — phím Enter"
             data-landmark="export-btn"
           >
-            🎬 {label(language, 'action.export').main}
+            🎬 {bilingualText(language, 'action.export')}
             <span className={styles.actionRight}>Enter</span>
           </button>
 

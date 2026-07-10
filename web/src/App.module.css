@@ -15,16 +15,24 @@
   min-width: 0;
 }
 
+/*
+ * Banner lỗi export — redline 2d-states.md "Chụp flash + lỗi export":
+ * background:#FDECEB viền #F6C9C5 radius 12px padding 10px 14px, chữ #C0392B 13px/700;
+ * nút Thử lại: nền #fff viền 1.5px #C0392B, pill, padding 4px 14px, 12px/800 #C0392B.
+ * (Vị trí "fixed bottom toast" là điều chỉnh hợp lý cho ngữ cảnh App-level — redline 2d chỉ
+ * là trang catalog token/style, không ép layout cụ thể.)
+ */
 .toast {
   position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--color-error-deep);
-  color: #fff;
-  padding: 12px 24px;
+  background: var(--color-error-surface);
+  border: 1px solid var(--color-error-border);
+  color: var(--color-error-deep);
+  padding: 10px 14px;
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -34,13 +42,14 @@
 }
 
 .toastRetry {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border: 1.5px solid rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
+  background: #fff;
+  color: var(--color-error-deep);
+  border: 1.5px solid var(--color-error-deep);
+  border-radius: var(--radius-full);
   padding: 4px 14px;
   cursor: pointer;
-  font-weight: 700;
-  font-size: 13px;
+  font-weight: 800;
+  font-size: 12px;
   font-family: inherit;
+  margin-left: auto;
 }

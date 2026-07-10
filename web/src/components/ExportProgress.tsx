@@ -43,7 +43,12 @@ export default function ExportProgress({ language, frameCount, progress, autoUpl
         <div className={styles.card} role="status" aria-live="polite" aria-label="Đang tạo phim" data-landmark="progress-card">
           <div className={styles.icon}>🎬</div>
           <h1 className={styles.title}>{title.main}</h1>
-          <p className={styles.sub}>{frameCount} frame · MP4 + GIF</p>
+          {/* Redline 2b literal: "Creating your movie — 42 frame · MP4 + GIF" — tiền tố EN chỉ
+              hiện khi language != 'vi' (F4: 'vi' ẩn hoàn toàn hậu tố tiếng Anh). */}
+          <p className={styles.sub}>
+            {language !== 'vi' ? 'Creating your movie — ' : ''}
+            {frameCount} {label(language, 'progress.frameUnit').main} · MP4 + GIF
+          </p>
           <div className={styles.track}>
             <div className={styles.fill} style={{ width: `${progress.percent}%` }} data-testid="export-progress-fill" />
           </div>

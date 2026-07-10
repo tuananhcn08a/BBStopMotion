@@ -58,7 +58,7 @@ export default function WelcomeScreen({ language, onStart }: Props) {
         onClick={onStart}
         data-landmark="welcome-cta"
       >
-        {cta.main}
+        {cta.main}{cta.sub ? ` · ${cta.sub}` : ''} 🚀
       </button>
       <div className={styles.ctaHint}>
         {language === 'en'

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import { ExportResult, Language } from '../types'
-import { label } from '../i18n'
+import { label, bilingualText } from '../i18n'
 import { uploadExportedFile } from '../hooks/useExport'
 import StepIndicator from './StepIndicator'
 import styles from './SuccessScreen.module.css'
@@ -88,7 +88,12 @@ export default function SuccessScreen({ result, onNewFilm, language, frameCount,
         <div className={styles.content}>
           <div className={styles.titleWrap}>
             <h1 className={styles.title}>{label(language, 'success.title').main}</h1>
-            <p className={styles.sub}>{frameCount} frame · {durationSeconds.toFixed(1)}s · MP4 + GIF</p>
+            {/* Redline 2c literal: "Your movie is ready — 42 frame · 4.2 giây · MP4 + GIF" —
+                tiền tố EN chỉ hiện khi language != 'vi' (F4: 'vi' ẩn hoàn toàn hậu tố tiếng Anh). */}
+            <p className={styles.sub}>
+              {language !== 'vi' ? 'Your movie is ready — ' : ''}
+              {frameCount} {label(language, 'progress.frameUnit').main} · {durationSeconds.toFixed(1)} giây · MP4 + GIF
+            </p>
           </div>
 
           <div className={styles.cardsRow}>
@@ -140,14 +145,14 @@ export default function SuccessScreen({ result, onNewFilm, language, frameCount,
               onClick={handleDownload}
               aria-label="Tải phim về máy"
             >
-              ⬇ {label(language, 'success.download').main}
+              ⬇ {bilingualText(language, 'success.download')}
             </button>
             <button
               className={styles.newFilmBtn}
               onClick={onNewFilm}
               aria-label="Làm phim mới, reset toàn bộ"
             >
-              🔁 {label(language, 'success.newFilm').main}
+              🔁 {bilingualText(language, 'success.newFilm')}
             </button>
           </div>
 

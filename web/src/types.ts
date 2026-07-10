@@ -84,4 +84,7 @@ export interface LibraryEntry {
   createdAt: number // epoch ms
   uploadUrl?: string
   expiresAt?: string // ISO-8601
+  /** Tên bé — redline 1g meta "{Tên bé} · {N} frame · {N}s · {giờ}". Web hiện chưa thu thập
+   *  tên bé ở luồng thật (ngoài phạm vi F7 hiện có) nên optional; chỉ gate fixture set giá trị này. */
+  childName?: string
 }
