@@ -47,6 +47,20 @@ QtObject {
     readonly property color liveDot:         "#FF453A"
 
     // -----------------------------------------------------------------
+    // T-BS33: residual hex gom về token — trắng/translucent dùng lặp lại
+    // trong nhiều pages (chip/badge/toast/modal), trước đó mỗi file tự
+    // khai "#FFFFFF"/"#40FFFFFF"/... riêng lẻ.
+    // -----------------------------------------------------------------
+    readonly property color white:           "#FFFFFF"  // text/icon trên nền màu, khác vai trò surfaceCard
+    readonly property color ctaShadow:       Qt.rgba(27 / 255, 110 / 255, 243 / 255, 0.35)  // 1d CTA box-shadow
+    readonly property color stepBadgeBg:     "#40FFFFFF"  // vòng tròn số bước (2a/2b step indicator)
+    readonly property color toggleOffBg:     "#C4D2E5"    // track toggle/switch khi tắt
+    readonly property color kbdHintText:     "#C9D8EE"    // chữ hint bàn phím trên nền preview tối
+    readonly property color kbdChipBgTranslucent: "#33FFFFFF"  // chip phím "Enter" trên nền brightPrimary
+    readonly property color modalScrim:      "#80101E33"  // nền mờ phía sau modal (Library QR/Player/Xoá)
+    readonly property color successIconBg:   "#EBFFFFFF"  // nền vòng tròn icon play (2c)
+
+    // -----------------------------------------------------------------
     // Typography
     // -----------------------------------------------------------------
     readonly property string fontFamily: "Plus Jakarta Sans"

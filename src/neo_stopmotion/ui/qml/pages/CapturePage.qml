@@ -94,15 +94,15 @@ Item {
                     spacing: 8
                     Rectangle {
                         width: 20; height: 20; radius: N.NeoConstants.radiusFull
-                        color: "#40FFFFFF"
-                        Text { anchors.centerIn: parent; text: "1"; font.pixelSize: 12; color: "#FFFFFF"; font.weight: Font.Bold }
+                        color: N.NeoConstants.stepBadgeBg
+                        Text { anchors.centerIn: parent; text: "1"; font.pixelSize: 12; color: N.NeoConstants.white; font.weight: Font.Bold }
                     }
                     Text {
                         text: root.mainLabel("Chụp · Capture", "Capture")
                         font.family: N.NeoConstants.fontFamily
                         font.pixelSize: 14
                         font.weight: Font.Bold
-                        color: "#FFFFFF"
+                        color: N.NeoConstants.white
                     }
                 }
             }
@@ -175,10 +175,10 @@ Item {
                     }
                     Rectangle {
                         width: 34; height: 20; radius: N.NeoConstants.radiusFull
-                        color: N.AppState.onionSkinEnabled ? N.NeoConstants.brightPrimary : "#C4D2E5"
+                        color: N.AppState.onionSkinEnabled ? N.NeoConstants.brightPrimary : N.NeoConstants.toggleOffBg
                         Rectangle {
                             width: 16; height: 16; radius: N.NeoConstants.radiusFull
-                            color: "#FFFFFF"
+                            color: N.NeoConstants.white
                             anchors.verticalCenter: parent.verticalCenter
                             x: N.AppState.onionSkinEnabled ? parent.width - width - 2 : 2
                             Behavior on x { NumberAnimation { duration: N.NeoConstants.animFast } }
@@ -255,7 +255,7 @@ Item {
                         font.pixelSize: 13
                         font.weight: Font.ExtraBold
                         font.letterSpacing: 0.8
-                        color: "#FFFFFF"
+                        color: N.NeoConstants.white
                     }
                 }
             }
@@ -278,7 +278,7 @@ Item {
                         font.family: N.NeoConstants.fontFamily
                         font.pixelSize: 13
                         font.weight: Font.ExtraBold
-                        color: "#FFFFFF"
+                        color: N.NeoConstants.white
                     }
                 }
             }
@@ -303,7 +303,7 @@ Item {
                         font.family: N.NeoConstants.fontFamily
                         font.pixelSize: 22
                         font.weight: Font.ExtraBold
-                        color: "#FFFFFF"
+                        color: N.NeoConstants.white
                     }
                     Text {
                         Layout.alignment: Qt.AlignHCenter
@@ -337,11 +337,11 @@ Item {
                         font.family: N.NeoConstants.fontFamily
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
-                        color: "#C9D8EE"
+                        color: N.NeoConstants.kbdHintText
                     }
                     Rectangle {
                         width: spaceKbd.implicitWidth + 14; height: 20; radius: 6
-                        color: "#FFFFFF"
+                        color: N.NeoConstants.white
                         Text { id: spaceKbd; anchors.centerIn: parent; text: "Space"; font.pixelSize: 11; font.weight: Font.ExtraBold; color: N.NeoConstants.navy }
                     }
                     Text {
@@ -349,7 +349,7 @@ Item {
                         font.family: N.NeoConstants.fontFamily
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
-                        color: "#C9D8EE"
+                        color: N.NeoConstants.kbdHintText
                     }
                 }
             }
@@ -610,12 +610,12 @@ Item {
                             font.family: N.NeoConstants.fontFamily
                             font.pixelSize: 15
                             font.weight: Font.ExtraBold
-                            color: "#FFFFFF"
+                            color: N.NeoConstants.white
                         }
                         Rectangle {
                             width: enterKbd.implicitWidth + 12; height: 20; radius: 6
-                            color: "#33FFFFFF"
-                            Text { id: enterKbd; anchors.centerIn: parent; text: "Enter"; font.pixelSize: 11; font.weight: Font.ExtraBold; color: "#FFFFFF" }
+                            color: N.NeoConstants.kbdChipBgTranslucent
+                            Text { id: enterKbd; anchors.centerIn: parent; text: "Enter"; font.pixelSize: 11; font.weight: Font.ExtraBold; color: N.NeoConstants.white }
                         }
                     }
                     MouseArea {

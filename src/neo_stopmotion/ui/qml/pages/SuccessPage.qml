@@ -104,7 +104,7 @@ Item {
                     Rectangle {
                         anchors.centerIn: parent
                         width: 70; height: 70; radius: 35
-                        color: "#EBFFFFFF"
+                        color: N.NeoConstants.successIconBg
                         visible: player.playbackState !== MediaPlayer.PlayingState
                         Text { anchors.centerIn: parent; text: "▶"; font.pixelSize: 24; color: N.NeoConstants.brightPrimary }
                         MouseArea { anchors.fill: parent; onClicked: player.play() }
@@ -255,7 +255,7 @@ Item {
                                 font.family: N.NeoConstants.fontFamily
                                 font.pixelSize: 14
                                 font.weight: Font.Bold
-                                color: "#FFFFFF"
+                                color: N.NeoConstants.white
                                 horizontalAlignment: Text.AlignHCenter
                             }
                             onClicked: {
@@ -288,7 +288,7 @@ Item {
                         font.family: N.NeoConstants.fontFamily
                         font.pixelSize: 16
                         font.weight: Font.ExtraBold
-                        color: "#FFFFFF"
+                        color: N.NeoConstants.white
                         horizontalAlignment: Text.AlignHCenter
                     }
                     leftPadding: 38
@@ -407,7 +407,7 @@ Item {
             font.family: N.NeoConstants.fontFamily
             font.pixelSize: N.NeoConstants.fontCaption
             font.weight: Font.Bold
-            color: "#FFFFFF"
+            color: N.NeoConstants.white
             wrapMode: Text.WrapAnywhere
         }
 

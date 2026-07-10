@@ -231,6 +231,46 @@ class LibraryService:
 
         logger.info(f"Session deleted: {session_id} ({session_dir})")
 
+    def update_download_url(
+        self, session_dir: Path, download_url: str, qr_path: Path | None = None
+    ) -> None:
+        """T-BS33 (F7/F8 follow-up): write a new share URL back into project.json.
+
+        AppController.retry_upload() previously only emitted the result over
+        SignalBus (QML session state) — the Library's badge would show the
+        stale/missing download_url again after a re-scan (app restart, or
+        just calling library_list_sessions() again) because project.json on
+        disk was never updated. This persists both download_url and (when
+        provided) qr_path so a re-scan reflects the retried upload.
+
+        Best-effort: missing project.json or a parse/write error is logged
+        and swallowed (mirrors _parse_session's tolerant error handling) —
+        retry_upload() must not raise just because the Library write-back
+        failed; the SignalBus result (session-only) still reaches the UI.
+        """
+        proj_file = Path(session_dir) / "project.json"
+        if not proj_file.exists():
+            logger.warning(f"update_download_url: no project.json in {session_dir}")
+            return
+
+        try:
+            data = json.loads(proj_file.read_text(encoding="utf-8"))
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"update_download_url: parse error in {proj_file}: {e}")
+            return
+
+        data["download_url"] = download_url
+        if qr_path is not None:
+            data["qr_path"] = str(qr_path)
+
+        try:
+            proj_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        except OSError as e:
+            logger.warning(f"update_download_url: write failed for {proj_file}: {e}")
+            return
+
+        logger.info(f"update_download_url: {proj_file} -> download_url={download_url}")
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------

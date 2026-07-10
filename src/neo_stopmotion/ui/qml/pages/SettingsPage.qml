@@ -127,6 +127,7 @@ Item {
                             Slider {
                                 id: onionSlider
                                 implicitWidth: 160
+                                implicitHeight: 18
                                 from: 0; to: 1.0
                                 stepSize: 0.05
                                 value: N.AppState.onionSkinOpacity
@@ -134,6 +135,35 @@ Item {
                                     appController.set_onion_skin_opacity(value)
                                     N.AppState.onionSkinOpacity = value
                                     N.AppState.onionSkinEnabled = value > 0
+                                }
+
+                                // T-BS33: blue-ring knob custom (redline 1h — track
+                                // 8px #E9F1FE, fill brightPrimary; knob 18x18 trắng
+                                // viền 2px brightPrimary) thay cho handle xám mặc
+                                // định Basic-style của QtQuick.Controls.
+                                background: Rectangle {
+                                    x: onionSlider.leftPadding
+                                    y: onionSlider.topPadding + onionSlider.availableHeight / 2 - height / 2
+                                    width: onionSlider.availableWidth
+                                    height: 8
+                                    radius: 4
+                                    color: N.NeoConstants.primaryTint
+                                    Rectangle {
+                                        width: onionSlider.visualPosition * parent.width
+                                        height: parent.height
+                                        radius: 4
+                                        color: N.NeoConstants.brightPrimary
+                                    }
+                                }
+                                handle: Rectangle {
+                                    x: onionSlider.leftPadding
+                                        + onionSlider.visualPosition * (onionSlider.availableWidth - width)
+                                    y: onionSlider.topPadding + onionSlider.availableHeight / 2 - height / 2
+                                    width: 18; height: 18
+                                    radius: 9
+                                    color: N.NeoConstants.surfaceCard
+                                    border.color: N.NeoConstants.brightPrimary
+                                    border.width: 2
                                 }
                             }
                             Text {
@@ -214,7 +244,7 @@ Item {
                                         font.family: N.NeoConstants.fontFamily
                                         font.pixelSize: 12
                                         font.weight: Font.Bold
-                                        color: isActive ? "#FFFFFF" : N.NeoConstants.slate
+                                        color: isActive ? N.NeoConstants.white : N.NeoConstants.slate
                                     }
                                     MouseArea {
                                         anchors.fill: parent

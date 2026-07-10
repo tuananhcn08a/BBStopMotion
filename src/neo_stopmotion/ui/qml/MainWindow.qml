@@ -66,6 +66,30 @@ ApplicationWindow {
     }
 
     // ========================================================================
+    // Welcome overlay (1d, T-BS33) — che toàn cửa sổ (sidebar+main) đầu phiên,
+    // full màn KHÔNG sidebar (redline 1d). AppState.welcomeSeen mặc định false
+    // mỗi lần mở app (domain BR-27, KHÔNG persist) → hiện trước sidebar-shell,
+    // biến mất ngay sau splash vì được vẽ TRƯỚC splashLoader (splash đè lên
+    // trên trong lúc chờ 2s, xong lộ ra Welcome đã sẵn sàng phía dưới).
+    // ========================================================================
+    Loader {
+        id: welcomeLoader
+        anchors.fill: parent
+        active: !N.AppState.welcomeSeen
+        sourceComponent: Pages.WelcomePage {
+            onStartRequested: {
+                // TS-BS-17: welcomeSeen=true, screen='capture' — explicit
+                // (not just "already the default") so this holds even if a
+                // future initialScreen value ever left AppState.screen
+                // pointing elsewhere before Welcome was dismissed.
+                N.AppState.welcomeSeen = true
+                _goToScreen("capture")
+                stack.forceActiveFocus()
+            }
+        }
+    }
+
+    // ========================================================================
     // Splash overlay — che toàn cửa sổ (sidebar+main) lúc khởi động, biến mất
     // sau khi finished() (T-BS30: sidebar-shell nằm sẵn phía dưới ngay từ đầu).
     // ========================================================================
@@ -185,7 +209,18 @@ ApplicationWindow {
         // T-BS30 (visual diff gate): NEO_STOPMOTION_SCREEN jumps straight to a
         // screen after splash — lets grab-qml.sh capture 1g/1h without scripting
         // clicks (verify/README.md limitation noted for T-BS03).
-        if (typeof initialScreen !== "undefined" && initialScreen !== "capture") {
+        // T-BS33: "welcome" is not a StackView page (full-screen overlay, no
+        // sidebar) — just make sure the overlay is showing (it already is by
+        // default, welcomeSeen starts false) instead of routing the stack.
+        // For any OTHER explicit screen (library/settings/...), the overlay
+        // must be dismissed first — otherwise welcomeLoader (active whenever
+        // welcomeSeen is false, independent of AppState.screen) would sit on
+        // top of the requested screen and grab-qml.sh would capture Welcome
+        // instead of e.g. 1h-settings (regression vs pre-T-BS33 behaviour).
+        if (typeof initialScreen !== "undefined" && initialScreen === "welcome") {
+            N.AppState.welcomeSeen = false
+        } else if (typeof initialScreen !== "undefined" && initialScreen !== "capture") {
+            N.AppState.welcomeSeen = true
             _goToScreen(initialScreen)
         }
     }

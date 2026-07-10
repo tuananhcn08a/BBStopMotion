@@ -234,6 +234,15 @@ class AppController(QObject):
                 url = uploader.upload(path)
                 qr_path = path.parent / "qr.png"
                 generate_qr(url, qr_path)
+                # T-BS33 (F7/F8 follow-up): write-back so the Library badge
+                # reflects the retried upload after a re-scan, not just this
+                # session's SignalBus/QML state. Best-effort — a failure here
+                # must not swallow the shareUrlReady result the UI is waiting on.
+                if self._library_service is not None:
+                    try:
+                        self._library_service.update_download_url(path.parent, url, qr_path)
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning(f"retry_upload: library write-back failed: {exc}")
                 self._bus.share_url_ready.emit(url, str(qr_path))
             except UploadError as exc:
                 logger.warning(f"retry_upload failed for {path}: {exc}")

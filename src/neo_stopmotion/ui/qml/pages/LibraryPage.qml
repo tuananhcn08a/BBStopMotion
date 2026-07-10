@@ -158,7 +158,7 @@ Item {
                         font.family: N.NeoConstants.fontFamily
                         font.pixelSize: 13
                         font.weight: Font.Bold
-                        color: isActive ? "#FFFFFF" : N.NeoConstants.slate
+                        color: isActive ? N.NeoConstants.white : N.NeoConstants.slate
                     }
                     MouseArea {
                         anchors.fill: parent
@@ -374,7 +374,7 @@ Item {
                                         background: Rectangle { radius: N.NeoConstants.radiusS; color: N.NeoConstants.brightPrimary }
                                         contentItem: Text {
                                             text: parent.text; font: parent.font
-                                            color: "#FFFFFF"
+                                            color: N.NeoConstants.white
                                             horizontalAlignment: Text.AlignHCenter
                                         }
                                         onClicked: root.playEntry = modelData
@@ -446,7 +446,7 @@ Item {
     // ------------------------------------------------------------------
     Rectangle {
         anchors.fill: parent
-        color: "#80101E33"
+        color: N.NeoConstants.modalScrim
         visible: root.qrEntry !== null
         MouseArea { anchors.fill: parent; onClicked: root.qrEntry = null }
 
@@ -498,7 +498,7 @@ Item {
     // ------------------------------------------------------------------
     Rectangle {
         anchors.fill: parent
-        color: "#80101E33"
+        color: N.NeoConstants.modalScrim
         visible: root.playEntry !== null
         MouseArea { anchors.fill: parent; onClicked: { root._stopPlayer(); root.playEntry = null } }
 
@@ -531,7 +531,7 @@ Item {
     // ------------------------------------------------------------------
     Rectangle {
         anchors.fill: parent
-        color: "#80101E33"
+        color: N.NeoConstants.modalScrim
         visible: root.deleteStep > 0
 
         Rectangle {
@@ -579,7 +579,7 @@ Item {
                     Button {
                         text: root.deleteStep === 1 ? root.mainLabel("Xoá", "Delete") : root.mainLabel("Xoá thật", "Delete for good")
                         background: Rectangle { radius: N.NeoConstants.radiusS; color: N.NeoConstants.dangerRed }
-                        contentItem: Text { text: parent.text; color: "#FFFFFF"; horizontalAlignment: Text.AlignHCenter }
+                        contentItem: Text { text: parent.text; color: N.NeoConstants.white; horizontalAlignment: Text.AlignHCenter }
                         onClicked: {
                             if (root.deleteStep === 1) {
                                 root.deleteStep = 2
@@ -614,7 +614,7 @@ Item {
             id: uploadToastText
             anchors.centerIn: parent
             text: uploadToast._msg
-            color: "#FFFFFF"
+            color: N.NeoConstants.white
             font.family: N.NeoConstants.fontFamily
         }
         Timer { id: uploadToastTimer; interval: 3000; onTriggered: uploadToast.opacity = 0 }

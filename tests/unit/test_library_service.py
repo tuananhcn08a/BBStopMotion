@@ -439,6 +439,76 @@ def test_to_qml_dict_keys(tmp_path):
 # fps_label for custom fps
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# T-BS33: update_download_url — retry-upload write-back (F7/F8 follow-up)
+# ---------------------------------------------------------------------------
+
+def test_update_download_url_writes_back(tmp_path):
+    """T-BS33: persists a new download_url (+ optional qr_path) into
+    project.json so a fresh list_sessions() scan reflects a retried upload."""
+    projects = tmp_path / "projects"
+    projects.mkdir()
+    session_dir = _make_session(projects, "retry1", download_url=None)
+
+    svc = LibraryService(projects)
+    qr = session_dir / "qr.png"
+    svc.update_download_url(session_dir, "https://example.com/retried.mp4", qr_path=qr)
+
+    data = json.loads((session_dir / "project.json").read_text(encoding="utf-8"))
+    assert data["download_url"] == "https://example.com/retried.mp4"
+    assert data["qr_path"] == str(qr)
+
+    # Re-scan (simulates the Library page re-opening) sees the new value.
+    entries = svc.list_sessions()
+    assert entries[0].download_url == "https://example.com/retried.mp4"
+
+
+def test_update_download_url_without_qr_path_leaves_qr_untouched(tmp_path):
+    """qr_path is optional — omitting it must not clobber the existing field."""
+    projects = tmp_path / "projects"
+    projects.mkdir()
+    session_dir = _make_session(projects, "retry2", download_url=None)
+    (session_dir / "project.json").write_text(
+        json.dumps({
+            **json.loads((session_dir / "project.json").read_text(encoding="utf-8")),
+            "qr_path": "/old/qr.png",
+        }),
+        encoding="utf-8",
+    )
+
+    svc = LibraryService(projects)
+    svc.update_download_url(session_dir, "https://example.com/x.mp4")
+
+    data = json.loads((session_dir / "project.json").read_text(encoding="utf-8"))
+    assert data["download_url"] == "https://example.com/x.mp4"
+    assert data["qr_path"] == "/old/qr.png"
+
+
+def test_update_download_url_missing_project_json_is_noop(tmp_path):
+    """No project.json in the session dir → logs + no-ops (does not raise)."""
+    projects = tmp_path / "projects"
+    projects.mkdir()
+    session_dir = projects / "session_nope"
+    session_dir.mkdir()
+
+    svc = LibraryService(projects)
+    svc.update_download_url(session_dir, "https://example.com/x.mp4")  # must not raise
+    assert not (session_dir / "project.json").exists()
+
+
+def test_update_download_url_corrupt_json_is_noop(tmp_path):
+    """Corrupt project.json → logs + no-ops (does not raise, does not overwrite)."""
+    projects = tmp_path / "projects"
+    projects.mkdir()
+    session_dir = projects / "session_bad"
+    session_dir.mkdir()
+    (session_dir / "project.json").write_text("{not valid json", encoding="utf-8")
+
+    svc = LibraryService(projects)
+    svc.update_download_url(session_dir, "https://example.com/x.mp4")  # must not raise
+    assert (session_dir / "project.json").read_text(encoding="utf-8") == "{not valid json"
+
+
 @pytest.mark.parametrize("fps,expected", [
     (5, "Chậm · 5 fps"),
     (8, "Vừa · 8 fps"),

@@ -21,6 +21,11 @@ QtObject {
     // Nav bị khoá khi đang xuất phim (F5 — sidebar opacity 0.55, không tương tác)
     property bool navLocked: false
 
+    // F6 — Welcome (1d). Domain BR-27: mặc định false MỖI LẦN mở app, KHÔNG
+    // persist qua config.toml/localStorage — luôn hiện lại Welcome ở lần mở
+    // tiếp theo (TS-BS-18). Trong-bộ-nhớ QML singleton là đúng cơ chế đó.
+    property bool welcomeSeen: false
+
     // F1 — onion skin toggle riêng ở 2a (đồng bộ 2 chiều với onionSkinOpacity Settings)
     property bool onionSkinEnabled: true
 

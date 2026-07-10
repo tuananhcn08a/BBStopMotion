@@ -78,15 +78,15 @@ Item {
                     spacing: 8
                     Rectangle {
                         width: 20; height: 20; radius: N.NeoConstants.radiusFull
-                        color: "#40FFFFFF"
-                        Text { anchors.centerIn: parent; text: "2"; font.pixelSize: 12; color: "#FFFFFF"; font.weight: Font.Bold }
+                        color: N.NeoConstants.stepBadgeBg
+                        Text { anchors.centerIn: parent; text: "2"; font.pixelSize: 12; color: N.NeoConstants.white; font.weight: Font.Bold }
                     }
                     Text {
                         text: root.mainLabel("Xuất · Export", "Export")
                         font.family: N.NeoConstants.fontFamily
                         font.pixelSize: 14
                         font.weight: Font.Bold
-                        color: "#FFFFFF"
+                        color: N.NeoConstants.white
                     }
                 }
             }

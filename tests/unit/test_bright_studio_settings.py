@@ -208,6 +208,101 @@ def test_retry_upload_missing_file_emits_empty_result(mock_capture, mock_session
     assert received == [("", "")]
 
 
+class _ImmediateThread:
+    """Runs retry_upload()'s background thread synchronously for deterministic tests."""
+
+    def __init__(self, target=None, daemon=None):
+        self._target = target
+
+    def start(self):
+        self._target()
+
+
+def test_retry_upload_success_persists_download_url_to_library(
+    mock_capture, mock_session, tmp_path, monkeypatch
+):
+    """T-BS33: retry_upload() success must write the new download_url (+
+    qr_path) back into project.json via LibraryService — previously only the
+    SignalBus/QML session state was updated, so the Library badge reverted
+    to the stale value on the next re-scan (app restart or reopening 1g)."""
+    import json
+
+    from neo_stopmotion.core.cloud_uploader import CloudUploader
+    from neo_stopmotion.services.library_service import LibraryService
+    from neo_stopmotion.utils.signal_bus import SignalBus
+
+    projects = tmp_path / "projects"
+    projects.mkdir()
+    session_dir = projects / "session_abc"
+    session_dir.mkdir()
+    mp4_path = session_dir / "output.mp4"
+    mp4_path.write_bytes(b"\x00" * 10)
+    (session_dir / "project.json").write_text(
+        json.dumps({
+            "session_id": "abc",
+            "title": "Phim test",
+            "created_at": "2026-07-10T14:20:00",
+            "frame_count": 10,
+            "fps_playback": 8,
+            "duration_seconds": 1.25,
+            "exported": True,
+            "mp4_path": str(mp4_path),
+            "gif_path": None,
+            "qr_path": None,
+            "download_url": None,
+        }),
+        encoding="utf-8",
+    )
+
+    library_service = LibraryService(projects)
+    ctrl = AppController(capture=mock_capture, session=mock_session, library_service=library_service)
+
+    monkeypatch.setattr("threading.Thread", _ImmediateThread)
+    monkeypatch.setattr(
+        CloudUploader, "upload", lambda self, path: "https://files.catbox.moe/newurl.mp4"
+    )
+    monkeypatch.setattr("neo_stopmotion.core.cloud_uploader.generate_qr", lambda url, path: None)
+
+    bus = SignalBus.instance()
+    received = []
+    bus.share_url_ready.connect(lambda url, qr: received.append((url, qr)))
+
+    ctrl.retry_upload(str(mp4_path))
+
+    expected_qr = str(session_dir / "qr.png")
+    assert received == [("https://files.catbox.moe/newurl.mp4", expected_qr)]
+
+    data = json.loads((session_dir / "project.json").read_text(encoding="utf-8"))
+    assert data["download_url"] == "https://files.catbox.moe/newurl.mp4"
+    assert data["qr_path"] == expected_qr
+
+
+def test_retry_upload_without_library_service_still_emits_result(
+    mock_capture, mock_session, tmp_path, monkeypatch
+):
+    """retry_upload() must keep working (no crash) when library_service is
+    None — e.g. lightweight AppController construction in other tests."""
+    from neo_stopmotion.core.cloud_uploader import CloudUploader
+    from neo_stopmotion.utils.signal_bus import SignalBus
+
+    mp4_path = tmp_path / "output.mp4"
+    mp4_path.write_bytes(b"\x00" * 10)
+
+    ctrl = AppController(capture=mock_capture, session=mock_session)  # no library_service
+
+    monkeypatch.setattr("threading.Thread", _ImmediateThread)
+    monkeypatch.setattr(CloudUploader, "upload", lambda self, path: "https://example.com/x.mp4")
+    monkeypatch.setattr("neo_stopmotion.core.cloud_uploader.generate_qr", lambda url, path: None)
+
+    bus = SignalBus.instance()
+    received = []
+    bus.share_url_ready.connect(lambda url, qr: received.append((url, qr)))
+
+    ctrl.retry_upload(str(mp4_path))
+
+    assert received == [("https://example.com/x.mp4", str(tmp_path / "qr.png"))]
+
+
 # ---------------------------------------------------------------------------
 # LibraryEntry.to_qml_dict — created_at ISO field (F7 filter Hôm nay/Tuần này)
 # ---------------------------------------------------------------------------
