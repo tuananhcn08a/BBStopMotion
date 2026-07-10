@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import { Language, LibraryEntry } from '../types'
 import { label, bilingualText } from '../i18n'
 import { matchesSearch } from '../lib/text'
@@ -34,7 +34,6 @@ function groupLabel(ts: number, language: Language): string {
 export default function LibraryScreen({ language, entries, onDelete, onPlay, onUpload, uploadingId }: Props) {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
@@ -64,14 +63,13 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
     if (confirmDeleteId === id) {
       onDelete(id)
       setConfirmDeleteId(null)
-      setOpenMenuId(null)
     } else {
       setConfirmDeleteId(id)
     }
   }
 
   return (
-    <div data-landmark="library-screen">
+    <div className={styles.screen} data-landmark="library-screen">
       <div className={styles.topRow}>
         <div className={styles.search}>
           🔍
@@ -104,9 +102,9 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
         <div className={styles.empty}>{label(language, 'library.empty').main}</div>
       )}
 
-      {groups.map(([groupName, groupEntries]) => (
-        <div key={groupName}>
-          <div className={styles.groupHeader}>{groupName}</div>
+      {groups.map(([groupName, groupEntries], groupIndex) => (
+        <Fragment key={groupName}>
+          <div className={`${styles.groupHeader} ${groupIndex > 0 ? styles.groupHeaderSpaced : ''}`}>{groupName}</div>
           <div className={styles.rows}>
             {groupEntries.map(entry => {
               const hasUpload = Boolean(entry.uploadUrl)
@@ -115,12 +113,14 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
               // để đặt tên landmark `library-row-{i}-*` nhất quán với mockup khi so bằng Visual Diff Gate.
               const rowIndex = filtered.indexOf(entry)
               const metaPrefix = entry.childName ? `${entry.childName} · ` : ''
+              const isConfirming = confirmDeleteId === entry.id
               return (
                 <div
                   className={styles.row}
                   key={entry.id}
                   data-testid={`library-row-${entry.id}`}
                   data-landmark={`library-row-${rowIndex}`}
+                  onMouseLeave={() => { if (isConfirming) setConfirmDeleteId(null) }}
                 >
                   <img
                     src={entry.thumbnailDataUrl}
@@ -161,30 +161,20 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
                   >
                     ▶ {label(language, 'library.play').main}
                   </button>
-                  <div className={styles.menuWrap}>
-                    <button
-                      className={styles.menuBtn}
-                      onClick={() => setOpenMenuId(openMenuId === entry.id ? null : entry.id)}
-                      aria-label="Thêm tuỳ chọn"
-                      data-testid={`menu-${entry.id}`}
-                    >
-                      ⋯
-                    </button>
-                    {openMenuId === entry.id && (
-                      <div className={styles.menuPopover}>
-                        <button className={styles.menuItem} onClick={() => handleDeleteClick(entry.id)} data-testid={`delete-${entry.id}`}>
-                          {confirmDeleteId === entry.id
-                            ? label(language, 'library.deleteConfirm').main
-                            : `🗑 ${label(language, 'library.delete').main}`}
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    type="button"
+                    className={`${styles.deleteBtn} ${isConfirming ? styles.deleteBtnConfirm : ''}`}
+                    onClick={() => handleDeleteClick(entry.id)}
+                    aria-label={isConfirming ? label(language, 'library.deleteConfirm').main : label(language, 'library.delete').main}
+                    data-testid={`delete-${entry.id}`}
+                  >
+                    {isConfirming ? `🗑 ${label(language, 'library.deleteConfirm').main}` : '🗑'}
+                  </button>
                 </div>
               )
             })}
           </div>
-        </div>
+        </Fragment>
       ))}
     </div>
   )
