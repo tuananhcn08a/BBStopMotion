@@ -1,3 +1,4 @@
+import importlib.util
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -11,8 +12,31 @@ sys.path.insert(0, str(ROOT / "src"))
 
 
 def _make_pyqt6_stubs() -> None:
-    """Provide lightweight stubs for PyQt6 so core tests run without the GUI stack."""
+    """Provide lightweight stubs for PyQt6 so core tests run without the GUI stack.
+
+    Only installs the fake `PyQt6` package when the *real* PyQt6 is not
+    installed in this environment (e.g. headless CI without the GUI stack).
+
+    Why the guard matters: this function runs at conftest.py import time,
+    which happens before pytest-qt's `pytest_configure` hook. If we always
+    replace `sys.modules["PyQt6"]` with a stub — even when a real PyQt6 is
+    installed — pytest-qt's hook later does
+    `__import__("PyQt6", ..., ["QtTest"], 0)`. Because `sys.modules["PyQt6"]`
+    is already our stub (which has no `QtTest` submodule), Python's import
+    machinery treats `PyQt6` as already-imported and skips importing/binding
+    the `QtTest` submodule onto it, so `getattr(PyQt6, "QtTest")` raises
+    `AttributeError` and crashes the whole pytest session at
+    `_do_configure()` (INTERNALERROR, 0 tests collected) — this was the
+    `make test` INTERNALERROR reported in T-BS31 gate-desktop-report.md.
+    Using `importlib.util.find_spec` here only *checks* for PyQt6 without
+    importing it, so it doesn't itself populate `sys.modules["PyQt6"]` and
+    doesn't interfere with pytest-qt's real import when PyQt6 is present.
+    """
     if "PyQt6" in sys.modules:
+        return
+    if importlib.util.find_spec("PyQt6") is not None:
+        # Real PyQt6 available — let pytest-qt (and everything else) import
+        # and use the genuine package instead of the lightweight fakes below.
         return
 
     class _pyqtSignal:  # noqa: N801

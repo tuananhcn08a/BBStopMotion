@@ -23,6 +23,14 @@ Item {
     function showSub() {
         return N.AppState.language === "vi+en"
     }
+    // "(đến DD/M)" — ngày hết hạn lưu phim (redline 2c: "Phim lưu 7 ngày (đến 17/7)").
+    // Không có mốc "uploaded_at" thật từ backend (catbox.moe không có expiry) nên tính
+    // trực tiếp từ ngày hiện tại + 7, cùng cách format "DD/M" đã dùng ở LibraryPage.qml.
+    function expiryDateLabel() {
+        var d = new Date()
+        d.setDate(d.getDate() + 7)
+        return d.getDate() + "/" + (d.getMonth() + 1)
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -184,8 +192,8 @@ Item {
                             Layout.fillWidth: true
                             visible: root.qrPath !== ""
                             text: root.mainLabel(
-                                "Phim lưu 7 ngày, chỉ ai có mã này mới tải được.",
-                                "Saved for 7 days; only people with this code can download it.")
+                                "Phim lưu 7 ngày (đến " + root.expiryDateLabel() + "), chỉ ai có mã này mới tải được.",
+                                "Saved for 7 days (until " + root.expiryDateLabel() + "); only people with this code can download it.")
                             font.family: N.NeoConstants.fontFamily
                             font.pixelSize: 12
                             color: N.NeoConstants.slate
@@ -276,7 +284,7 @@ Item {
                         opacity: downloadBtn.enabled ? 1.0 : 0.5
                     }
                     contentItem: Text {
-                        text: root.mainLabel("⬇ Tải về máy", "⬇ Download")
+                        text: root.mainLabel("⬇ Tải về máy · Download", "⬇ Download")
                         font.family: N.NeoConstants.fontFamily
                         font.pixelSize: 16
                         font.weight: Font.ExtraBold
@@ -298,7 +306,7 @@ Item {
                         border.width: 2
                     }
                     contentItem: Text {
-                        text: root.mainLabel("🔁 Làm phim mới", "🔁 New film")
+                        text: root.mainLabel("🔁 Làm phim mới · New film", "🔁 New film")
                         font.family: N.NeoConstants.fontFamily
                         font.pixelSize: 16
                         font.weight: Font.ExtraBold

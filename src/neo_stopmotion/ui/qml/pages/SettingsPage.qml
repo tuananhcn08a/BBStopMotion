@@ -22,14 +22,23 @@ Item {
     }
 
     ScrollView {
+        id: settingsScroll
         anchors.fill: parent
         anchors.margins: 24
         anchors.leftMargin: 28
         anchors.rightMargin: 28
         clip: true
+        // NOTE: ScrollView's implicit content Flickable defaults contentWidth to the
+        // content's implicitWidth (contentChildrenWidth), NOT the viewport width. A
+        // ColumnLayout child binding `width: parent.width` therefore sees the narrow
+        // implicit width instead of the real viewport — cards inside collapse to their
+        // narrowest row instead of filling the page (QA T-BS31, 1h-settings FAIL).
+        // Fix: pin contentWidth to availableWidth so the viewport drives sizing, then
+        // bind the ColumnLayout to that same width explicitly (not `parent.width`).
+        contentWidth: availableWidth
 
         ColumnLayout {
-            width: parent.width
+            width: settingsScroll.availableWidth
             spacing: 14
 
             RowLayout {
