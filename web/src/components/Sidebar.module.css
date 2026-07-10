@@ -27,12 +27,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
+  font-weight: var(--typ-weight-bold);
   font-size: 14px;
 }
 
 .wordmark {
-  font-weight: 800;
+  font-weight: var(--typ-weight-bold);
   font-size: 17px;
   color: var(--color-text-primary);
 }
@@ -72,7 +72,7 @@
 .navItemActive {
   background: var(--color-bg-tint);
   color: var(--color-primary);
-  font-weight: 700;
+  font-weight: var(--typ-weight-semibold);
 }
 
 .navIcon {
@@ -99,21 +99,21 @@
 
 .progressLabel {
   font-size: var(--typ-micro);
-  font-weight: 800;
-  letter-spacing: 0.1em;
+  font-weight: var(--typ-weight-semibold);
+  letter-spacing: var(--typ-ls-caps);
   color: var(--color-text-secondary);
 }
 
 .progressNum {
   font-size: 34px;
-  font-weight: 800;
+  font-weight: var(--typ-weight-semibold);
   margin-top: 6px;
   color: var(--color-text-primary);
 }
 
 .progressGoal {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: var(--typ-weight-medium);
   color: var(--color-text-secondary);
 }
 
@@ -161,7 +161,7 @@
   padding: 12px 14px;
   border-radius: var(--radius-md);
   color: var(--color-text-secondary);
-  font-weight: 600;
+  font-weight: var(--typ-weight-medium);
   font-size: 14px;
   background: none;
   border: none;

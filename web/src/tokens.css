@@ -68,6 +68,20 @@
   --typ-caption: 13px;
   --typ-micro: 11px;
 
+  /* Weight — 4 bậc cố định, vai trò gán theo R1-R4 (typography-refine/spec-v2.md).
+     800 đã nghỉ hưu khỏi UI chrome — không dùng cho nhãn/nút/badge nào nữa. */
+  --typ-weight-regular: 400;
+  --typ-weight-medium: 500;   /* mặc định label/control không active */
+  --typ-weight-semibold: 600; /* R1 (tiêu đề/số hero ≥20px), R2 (action lặp theo dòng), R3 (micro-caps nền phẳng sáng) */
+  --typ-weight-bold: 700;     /* R2 (CTA duy nhất/màn), R3 (micro-caps nền tối/ảnh), R4 (brand + kbd chip) */
+
+  /* Letter-spacing micro-caps — chia theo nền (R3) */
+  --typ-ls-caps: 0.06em;       /* nền phẳng sáng, weight 600 */
+  --typ-ls-caps-dark: 0.08em;  /* nền tối/ảnh, weight 700 */
+
+  /* Gap title↔mô tả trong 1 dòng (Settings rowName↔rowDesc, Library filmTitle↔meta) */
+  --gap-row-title-desc: 4px;
+
   /* ---------- Shadow ---------- */
   --shadow-card: 0 10px 30px rgba(28, 50, 85, 0.08);
   --shadow-btn-primary: 0 6px 16px rgba(27, 110, 243, 0.30);

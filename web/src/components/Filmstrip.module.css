@@ -14,8 +14,8 @@
 
 .title {
   font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-weight: var(--typ-weight-semibold);
+  letter-spacing: var(--typ-ls-caps);
   color: var(--color-text-secondary);
 }
 
@@ -61,7 +61,7 @@
   background: rgba(16, 30, 51, 0.8);
   color: #fff;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--typ-weight-bold);
   border-radius: 5px;
   padding: 1px 6px;
 }
@@ -126,7 +126,7 @@
 
 .emptyPlus {
   font-size: 18px;
-  font-weight: 800;
+  font-weight: var(--typ-weight-bold);
 }
 
 .emptyNum {
