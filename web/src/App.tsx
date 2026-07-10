@@ -47,6 +47,7 @@ function App() {
     GATE_FIXTURE === 'library' ? buildGateLibraryEntries() : []
   ))
   const [uploadingId, setUploadingId] = useState<string | null>(null)
+  const [libraryNotice, setLibraryNotice] = useState<string | null>(null)
   const blobCacheRef = useRef<Map<string, Blob>>(new Map())
 
   const { exportVideo, progress: liveExportProgress } = useExport()
@@ -153,7 +154,9 @@ function App() {
     const cachedBlob = blobCacheRef.current.get(entry.id)
     if (!cachedBlob) {
       // File gốc không còn trong bộ nhớ trình duyệt (đã đóng tab/reload) — giới hạn đã biết của
-      // kiến trúc Web Library metadata-only (Q6a). Không crash, chỉ bỏ qua thao tác.
+      // kiến trúc Web Library metadata-only (Q6a). Không crash — báo nhẹ cho bé thay vì im lặng
+      // (architect follow-up non-blocking, T-BS10 review).
+      setLibraryNotice(label(settings.language, 'library.blobExpired').main)
       return
     }
     setUploadingId(entry.id)
@@ -168,7 +171,7 @@ function App() {
     } finally {
       setUploadingId(null)
     }
-  }, [])
+  }, [settings.language])
 
   if (!welcomeSeen) {
     return <WelcomeScreen language={settings.language} onStart={handleStartWelcome} />
@@ -240,6 +243,19 @@ function App() {
           <span>{exportError}</span>
           <button onClick={handleRetryExport} data-testid="app-retry-export" className={styles.toastRetry}>
             {label(settings.language, 'states.retry').main}
+          </button>
+        </div>
+      )}
+
+      {libraryNotice && (
+        <div role="status" data-testid="app-library-notice" className={`${styles.toast} ${styles.toastInfo}`}>
+          <span>{libraryNotice}</span>
+          <button
+            onClick={() => setLibraryNotice(null)}
+            data-testid="app-library-notice-dismiss"
+            className={styles.toastRetry}
+          >
+            {label(settings.language, 'library.qrClose').main}
           </button>
         </div>
       )}

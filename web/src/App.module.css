@@ -53,3 +53,15 @@
   font-family: inherit;
   margin-left: auto;
 }
+
+/* Toast thông tin nhẹ (không phải lỗi) — vd Library báo file phim đã hết trên máy sau reload. */
+.toastInfo {
+  background: var(--color-warn-surface);
+  border-color: var(--color-warn-border);
+  color: var(--color-warn-text);
+}
+
+.toastInfo .toastRetry {
+  color: var(--color-warn-text);
+  border-color: var(--color-warn-text);
+}

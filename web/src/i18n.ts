@@ -101,6 +101,16 @@ export const STRINGS = {
   'library.delete': { vi: 'Xoá phim', en: 'Delete' },
   'library.deleteConfirm': { vi: 'Xoá phim này?', en: 'Delete this film?' },
   'library.empty': { vi: 'Chưa có phim nào trong thư viện', en: 'No films in your library yet' },
+  'library.qrTitle': { vi: 'Mã QR chia sẻ phim', en: 'Share QR code' },
+  'library.qrClose': { vi: 'Đóng', en: 'Close' },
+  'library.qrNotUploaded': {
+    vi: 'Phim chưa tải lên — bấm ↻ Tải lên trước nhé.',
+    en: 'This film has not been uploaded yet — tap ↻ Upload first.',
+  },
+  'library.blobExpired': {
+    vi: 'File phim này đã hết trên máy (đóng tab hoặc tải lại trang) — con làm phim mới để tải lên nhé!',
+    en: 'This film file is no longer on this device (tab closed or page reloaded) — make a new film to upload!',
+  },
   'settings.title': { vi: 'Cài đặt', en: 'Settings' },
   'settings.subtitle': { vi: '(dành cho Thợ Cả)', en: '(for the Studio Lead)' },
   'settings.camera': { vi: 'Camera', en: 'Camera' },

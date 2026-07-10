@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from 'react'
 import { Language, LibraryEntry } from '../types'
 import { label, bilingualText } from '../i18n'
 import { matchesSearch } from '../lib/text'
+import QRModal from './QRModal'
 import styles from './LibraryScreen.module.css'
 
 interface Props {
@@ -35,6 +36,7 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<Filter>('all')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [qrEntry, setQrEntry] = useState<LibraryEntry | null>(null)
 
   const filtered = useMemo(() => {
     const today = startOfDay(Date.now())
@@ -69,6 +71,7 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
   }
 
   return (
+    <>
     <div className={styles.screen} data-landmark="library-screen">
       <div className={styles.topRow}>
         <div className={styles.search}>
@@ -142,7 +145,13 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
                     {hasUpload ? `✓ ${label(language, 'library.uploaded').main}` : `⚠ ${label(language, 'library.notUploaded').main}`}
                   </span>
                   {hasUpload ? (
-                    <button className={styles.btnSecondary} data-testid={`qr-${entry.id}`}>QR</button>
+                    <button
+                      className={styles.btnSecondary}
+                      onClick={() => setQrEntry(entry)}
+                      data-testid={`qr-${entry.id}`}
+                    >
+                      QR
+                    </button>
                   ) : (
                     <button
                       className={styles.btnSecondary}
@@ -177,5 +186,14 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
         </Fragment>
       ))}
     </div>
+    {qrEntry && (
+      <QRModal
+        language={language}
+        title={qrEntry.title}
+        uploadUrl={qrEntry.uploadUrl}
+        onClose={() => setQrEntry(null)}
+      />
+    )}
+    </>
   )
 }

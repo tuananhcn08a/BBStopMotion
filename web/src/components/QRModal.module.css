@@ -1,0 +1,77 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 30, 51, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.modal {
+  position: relative;
+  width: 300px;
+  max-width: 100%;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 28px 20px 20px;
+  box-sizing: border-box;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: var(--shadow-card);
+}
+
+.closeBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: var(--color-bg-tint);
+  color: var(--color-text-primary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--color-text-primary);
+  margin-bottom: 14px;
+  padding-right: 20px;
+}
+
+.qrBox {
+  width: 200px;
+  height: 200px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.hint {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  margin-top: 12px;
+}
+
+.notice {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-warn-text);
+  background: var(--color-warn-surface);
+  border: 1px solid var(--color-warn-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
