@@ -201,6 +201,7 @@ function App() {
             onionOpacity={settings.onionSkinOpacity}
             onionEnabled={onionEnabled}
             setOnionEnabled={setOnionEnabled}
+            preferredCameraDeviceId={settings.cameraDeviceId}
             forcedCameraState={GATE_FIXTURE === 'denied' ? 'denied' : undefined}
             initialExportError={GATE_FIXTURE === 'disabled' ? label(settings.language, 'states.minFrames').main : null}
           />

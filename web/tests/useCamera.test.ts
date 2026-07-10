@@ -211,4 +211,31 @@ describe('useCamera state machine', () => {
     await waitFor(() => expect(result.current.state).toBe('live'))
     expect(result.current.stream).toBe(stream)
   })
+
+  // T-BS35 — SettingsScreen (F8) persist cameraDeviceId; useCamera phải xin đúng camera đã chọn
+  // ngay lúc mount (CaptureScreen unmount/remount mỗi lần chuyển màn nên "áp lúc mount" là đủ).
+  it('T-BS35: useCamera(preferredDeviceId) → mount xin đúng deviceId đã lưu ở Settings', async () => {
+    const stream = makeMediaStream('cam-2')
+    getUserMediaMock.mockResolvedValueOnce(stream)
+
+    const { result } = renderHook(() => useCamera('cam-2'))
+
+    await waitFor(() => expect(result.current.state).toBe('live'))
+    expect(getUserMediaMock).toHaveBeenCalledWith(
+      expect.objectContaining({ video: { deviceId: { exact: 'cam-2' } } }),
+    )
+    expect(result.current.activeDeviceId).toBe('cam-2')
+  })
+
+  it('T-BS35: useCamera(null) hoặc không truyền → mount dùng camera mặc định (không exact deviceId)', async () => {
+    const stream = makeMediaStream('cam-1')
+    getUserMediaMock.mockResolvedValueOnce(stream)
+
+    const { result } = renderHook(() => useCamera(null))
+
+    await waitFor(() => expect(result.current.state).toBe('live'))
+    expect(getUserMediaMock).toHaveBeenCalledWith(
+      expect.objectContaining({ video: true }),
+    )
+  })
 })

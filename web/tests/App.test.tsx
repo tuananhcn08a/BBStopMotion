@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import type { CapturedFrame, FpsLevel } from '../src/types'
+import type { CapturedFrame, FpsLevel, LibraryEntry } from '../src/types'
 
 // ─── Mock useExport ───────────────────────────────────────────────────────────
 // We need to control whether exportVideo resolves or rejects.
@@ -198,6 +198,61 @@ describe('App — handleExport error path (T-W06)', () => {
     // Success screen shown
     await waitFor(() => {
       expect(screen.getByTestId('success-screen')).toBeInTheDocument()
+    })
+
+    unmount()
+    vi.resetModules()
+  })
+})
+
+// ─── T-BS35 (xác nhận) — handleLibraryUpload reload-blob message (đã thêm round-4, architect
+// review "Library reload mất blob điểm hở #1") — Library metadata sống trong IndexedDB (Q6a) mà
+// KHÔNG lưu MP4/GIF gốc; nếu tab đóng/reload rồi bấm "Tải lên" 1 phim cũ, blob không còn trong
+// bộ nhớ (blobCacheRef chỉ tồn tại trong phiên App hiện tại) → phải báo bé bằng thông báo tiếng
+// Việt thay vì im lặng. Trước round-4 đây là no-op (bug, xem architect-web-review.md).
+describe('App — handleLibraryUpload blob-expired notice (T-BS35 xác nhận round-4)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('bấm Tải lên 1 phim không còn blob trong bộ nhớ (mô phỏng reload) → hiện thông báo tiếng Việt, bấm Đóng thì tắt', async () => {
+    const goneEntry: LibraryEntry = {
+      id: 'gone-1',
+      title: 'Phim của con · 1/1/2026',
+      thumbnailDataUrl: '',
+      frameCount: 12,
+      durationSeconds: 2,
+      createdAt: Date.now(),
+    }
+
+    vi.doMock('../src/components/LibraryScreen', () => ({
+      default: ({ onUpload }: { onUpload: (entry: LibraryEntry) => void }) => (
+        <div data-testid="library-screen">
+          <button data-testid="trigger-library-upload" onClick={() => onUpload(goneEntry)}>
+            Tải lên
+          </button>
+        </div>
+      ),
+    }))
+
+    const { default: AppDynamic } = await import('../src/App')
+    const { unmount } = render(<AppDynamic />)
+    await dismissWelcome()
+
+    const user = userEvent.setup()
+    await user.click(await screen.findByTestId('nav-library'))
+    await user.click(await screen.findByTestId('trigger-library-upload'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('app-library-notice')).toBeInTheDocument()
+    })
+    expect(screen.getByTestId('app-library-notice')).toHaveTextContent(
+      'File phim này đã hết trên máy',
+    )
+
+    await user.click(screen.getByTestId('app-library-notice-dismiss'))
+    await waitFor(() => {
+      expect(screen.queryByTestId('app-library-notice')).not.toBeInTheDocument()
     })
 
     unmount()

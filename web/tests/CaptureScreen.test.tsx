@@ -148,26 +148,39 @@ describe('CaptureScreen — camera inline states', () => {
     expect(screen.getByText(errorMsg)).toBeInTheDocument()
   })
 
-  it('TS-06/AC5: state=denied with devices → dropdown "Chọn camera khác" visible', () => {
+  // T-BS35 — nút ghost "Chọn camera khác ▾" (mockup 2d state 2) thay cho <select> cũ (điểm hở #3
+  // architect review). Bấm nút mở menu liệt kê thiết bị; bấm 1 option gọi switchCamera(deviceId).
+  it('T-BS35/AC5: state=denied with devices → ghost-button "Chọn camera khác ▾" mở menu chọn thiết bị', async () => {
     const devices: MediaDeviceInfo[] = [
       { deviceId: 'cam-1', kind: 'videoinput', label: 'Webcam HD', groupId: '', toJSON: () => ({}) },
       { deviceId: 'cam-2', kind: 'videoinput', label: 'Camera USB', groupId: '', toJSON: () => ({}) },
     ]
+    const switchCamera = vi.fn().mockResolvedValue(undefined)
     useCameraMock.mockReturnValue(
-      makeCameraMock('denied', { devices, error: null }),
+      makeCameraMock('denied', { devices, switchCamera, error: null }),
     )
     renderCaptureScreen()
 
-    const select = screen.getByTestId('camera-select')
-    expect(select).toBeInTheDocument()
-    // 2 device options + 1 disabled placeholder
-    const options = select.querySelectorAll('option:not([disabled])')
+    const ghostBtn = screen.getByTestId('camera-select')
+    expect(ghostBtn.tagName).toBe('BUTTON')
+    expect(ghostBtn).toHaveTextContent('Chọn camera khác')
+    expect(screen.queryByTestId('camera-menu')).not.toBeInTheDocument()
+
+    await userEvent.click(ghostBtn)
+
+    const menu = screen.getByTestId('camera-menu')
+    const options = menu.querySelectorAll('[role="option"]')
     expect(options.length).toBe(2)
     expect(options[0].textContent).toBe('Webcam HD')
     expect(options[1].textContent).toBe('Camera USB')
+
+    await userEvent.click(options[1])
+    expect(switchCamera).toHaveBeenCalledWith('cam-2')
+    // Chọn xong menu tự đóng
+    expect(screen.queryByTestId('camera-menu')).not.toBeInTheDocument()
   })
 
-  it('AC5: devices with empty labels → shows "Camera N" fallback', () => {
+  it('T-BS35/AC5: devices with empty labels → shows "Camera N" fallback trong menu', async () => {
     const devices: MediaDeviceInfo[] = [
       { deviceId: 'cam-1', kind: 'videoinput', label: '', groupId: '', toJSON: () => ({}) },
       { deviceId: 'cam-2', kind: 'videoinput', label: '', groupId: '', toJSON: () => ({}) },
@@ -177,10 +190,16 @@ describe('CaptureScreen — camera inline states', () => {
     )
     renderCaptureScreen()
 
-    const select = screen.getByTestId('camera-select')
-    const options = select.querySelectorAll('option:not([disabled])')
+    await userEvent.click(screen.getByTestId('camera-select'))
+    const options = screen.getByTestId('camera-menu').querySelectorAll('[role="option"]')
     expect(options[0].textContent).toBe('Camera 1')
     expect(options[1].textContent).toBe('Camera 2')
+  })
+
+  it('T-BS35/AC5: không có thiết bị nào → ghost-button "Chọn camera khác" không hiện', () => {
+    useCameraMock.mockReturnValue(makeCameraMock('denied', { devices: [], error: null }))
+    renderCaptureScreen()
+    expect(screen.queryByTestId('camera-select')).not.toBeInTheDocument()
   })
 
   // ─── AC4 / TS-15: state=no-device ────────────────────────────────────────

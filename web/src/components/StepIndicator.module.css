@@ -50,6 +50,6 @@
 }
 
 .sep {
-  color: #B6C3D6;
+  color: var(--color-text-step-sep);
   font-weight: 700;
 }

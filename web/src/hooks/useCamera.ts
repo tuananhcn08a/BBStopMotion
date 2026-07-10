@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { listVideoInputDevices } from './useCameraDevices'
 
 export type CameraState = 'requesting' | 'live' | 'denied' | 'no-device'
 
@@ -15,9 +16,15 @@ export interface UseCameraReturn {
 
 const CAMERA_TIMEOUT_MS = 5000
 
-export function useCamera(): UseCameraReturn {
+/**
+ * @param preferredDeviceId Camera đã chọn ở Settings (F8, `settings.cameraDeviceId`), áp dụng
+ *   MỘT LẦN lúc mount (CaptureScreen unmount/remount mỗi lần chuyển màn nên "áp lúc mount" là đủ
+ *   — không cần theo dõi thay đổi sau đó). `undefined`/`null` → dùng camera mặc định của trình duyệt.
+ */
+export function useCamera(preferredDeviceId?: string | null): UseCameraReturn {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const initialDeviceIdRef = useRef(preferredDeviceId ?? null)
 
   const [state, setState] = useState<CameraState>('requesting')
   const [stream, setStream] = useState<MediaStream | null>(null)
@@ -26,13 +33,7 @@ export function useCamera(): UseCameraReturn {
   const [error, setError] = useState<string | null>(null)
 
   const enumerateDevices = useCallback(async () => {
-    try {
-      const allDevices = await navigator.mediaDevices.enumerateDevices()
-      const videoDevices = allDevices.filter(d => d.kind === 'videoinput')
-      setDevices(videoDevices)
-    } catch {
-      // enumerateDevices failure is non-fatal — leave devices as-is
-    }
+    setDevices(await listVideoInputDevices())
   }, [])
 
   const stopCurrentStream = useCallback(() => {
@@ -142,12 +143,12 @@ export function useCamera(): UseCameraReturn {
     [requestCamera],
   )
 
-  // Mount: request camera immediately + enumerate devices.
-  // requestCamera and enumerateDevices are stable (useCallback with [] deps),
-  // so this effect only runs once on mount.
+  // Mount: request camera immediately (dùng deviceId đã lưu ở Settings nếu có) + enumerate
+  // devices. requestCamera/enumerateDevices ổn định (useCallback deps rỗng/gần rỗng) nên effect
+  // này chỉ chạy 1 lần lúc mount — initialDeviceIdRef không phải dep vì chỉ đọc giá trị lúc mount.
   useEffect(() => {
     void enumerateDevices()
-    void requestCamera()
+    void requestCamera(initialDeviceIdRef.current)
   }, [enumerateDevices, requestCamera])
 
   // Attach stream to video element whenever stream or videoRef changes

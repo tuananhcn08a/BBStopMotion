@@ -1,5 +1,6 @@
 import { AppSettings, FpsLevel, GOAL_FRAMES_OPTIONS, Language } from '../types'
 import { label, bilingualText } from '../i18n'
+import { useCameraDevices } from '../hooks/useCameraDevices'
 import styles from './SettingsScreen.module.css'
 
 interface Props {
@@ -30,6 +31,8 @@ function Toggle({ checked, onChange, testId }: { checked: boolean; onChange: (v:
 
 export default function SettingsScreen({ settings, onChange }: Props) {
   const language = settings.language
+  // F8 (T-BS35) — danh sách camera thật, KHÔNG mở stream riêng (xem useCameraDevices.ts).
+  const { devices } = useCameraDevices()
   const titleLabel = label(language, 'settings.title')
   const subtitleLabel = label(language, 'settings.subtitle')
   // Redline 1h literal: "Cài đặt · Settings (dành cho Thợ Cả)" — title.sub ("Settings") PHẢI
@@ -51,7 +54,20 @@ export default function SettingsScreen({ settings, onChange }: Props) {
             <div className={styles.rowName}>{label(language, 'settings.camera').main}</div>
             <div className={styles.rowDesc}>Chọn thiết bị camera đang dùng</div>
           </div>
-          <div className={styles.dropdown} data-testid="camera-dropdown">Mặc định ▾</div>
+          <select
+            className={styles.dropdown}
+            value={settings.cameraDeviceId ?? ''}
+            onChange={e => onChange({ cameraDeviceId: e.target.value || null })}
+            aria-label={label(language, 'settings.camera').main}
+            data-testid="camera-dropdown"
+          >
+            <option value="">Mặc định</option>
+            {devices.map((d, i) => (
+              <option key={d.deviceId} value={d.deviceId}>
+                {d.label || `Camera ${i + 1}`}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className={styles.row}>

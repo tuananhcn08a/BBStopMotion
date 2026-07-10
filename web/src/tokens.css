@@ -38,12 +38,16 @@
   --color-text-on-dark: #C9D8EE;
   --color-text-on-dark-dim: #8FA6C6;
   --color-text-on-tint-active: #7FA8EE;
+  /* Separator "·" trong step-chip (StepIndicator) — mockup 2a/2b/2c. */
+  --color-text-step-sep: #B6C3D6;
 
   /* ---------- Border ---------- */
   --color-border: #E3EAF4;
   --color-border-soft: #E9EFF7;
   --color-divider: #EEF3FA;
   --color-border-dashed: #C4D2E5;
+  /* Viền ghost-button trên nền tối (camera denied "Chọn camera khác ▾") — mockup 2d state 2. */
+  --color-border-on-dark: #40546F;
 
   /* ---------- Radius ---------- */
   --radius-sm: 10px;

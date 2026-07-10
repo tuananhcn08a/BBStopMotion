@@ -16,6 +16,20 @@ interface Props {
   autoUpload: boolean
 }
 
+// QR "dark" module color — phải khớp `--color-text-primary` (tokens.css). Thư viện `qrcode`
+// nhận literal hex, không đọc được CSS var trực tiếp, nên đọc `getComputedStyle` lúc runtime để
+// không trôi giá trị so với token; fallback hex chỉ dùng khi tokens.css chưa load (SSR/vitest —
+// jsdom test không bật CSS, xem ghi chú tests/2d-states.test.tsx).
+const QR_DARK_FALLBACK = '#1C3255'
+
+function getQrDarkColor(): string {
+  if (typeof document === 'undefined') return QR_DARK_FALLBACK
+  const fromToken = getComputedStyle(document.documentElement)
+    .getPropertyValue('--color-text-primary')
+    .trim()
+  return fromToken || QR_DARK_FALLBACK
+}
+
 /** Format an ISO-8601 date string to a friendly Vietnamese date, e.g. "3/7/2026". */
 function formatExpiryDate(iso: string): string {
   try {
@@ -47,7 +61,7 @@ export default function SuccessScreen({ result, onNewFilm, language, frameCount,
       QRCode.toDataURL(manualUploadUrl, {
         width: 220,
         margin: 2,
-        color: { dark: '#1C3255', light: '#FFFFFF' },
+        color: { dark: getQrDarkColor(), light: '#FFFFFF' },
       }).then(url => setQrDataUrl(url)).catch(() => {/* ignore */})
     }
   }, [manualUploadUrl])

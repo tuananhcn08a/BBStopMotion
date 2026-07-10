@@ -138,9 +138,13 @@
   cursor: pointer;
 }
 
+.cameraChooseWrap {
+  position: relative;
+}
+
 .cameraSelect {
   background: transparent;
-  border: 1.5px solid #40546F;
+  border: 1.5px solid var(--color-border-on-dark);
   border-radius: var(--radius-full);
   padding: 9px 20px;
   font-family: inherit;
@@ -148,6 +152,42 @@
   font-size: 13px;
   color: var(--color-text-on-dark);
   cursor: pointer;
+}
+
+.cameraMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-bg-preview-alt);
+  border: 1px solid var(--color-border-on-dark);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  min-width: 200px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 5;
+  box-shadow: var(--shadow-card);
+}
+
+.cameraMenuItem {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--color-text-on-dark);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cameraMenuItem:hover,
+.cameraMenuItem[aria-selected='true'] {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .liveBadge {

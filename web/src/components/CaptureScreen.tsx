@@ -26,6 +26,8 @@ interface Props {
   /** Visual Diff Gate only (T-BS11) — giá trị exportError khởi tạo, để chụp mockup 2d state 1
    *  (nút Xuất disabled + toast cảnh báo cùng lúc) mà không cần bấm Enter thật. */
   initialExportError?: string | null
+  /** F8 (T-BS35) — camera đã chọn ở Settings (`settings.cameraDeviceId`), áp dụng lúc mount. */
+  preferredCameraDeviceId?: string | null
 }
 
 // SVG icon for camera-off state
@@ -33,12 +35,72 @@ function CameraOffIcon() {
   return <span className={styles.placeholderIcon} aria-hidden="true">📷🚫</span>
 }
 
+/** Ghost-button "Chọn camera khác ▾" (mockup 2d state 2, redline 2d-states.md) hiện khi camera
+ *  denied/no-device VÀ còn thiết bị khác để chọn — bấm mở menu liệt kê thiết bị, chọn 1 cái gọi
+ *  `switchCamera`. Thay cho `<select>` cũ (điểm hở #3 architect review — không đổi hành vi, chỉ
+ *  đổi control cho khớp mockup). Tách component riêng để dùng chung cho state denied + no-device
+ *  thay vì lặp JSX 2 lần. */
+function CameraDeviceChooser({
+  devices, activeDeviceId, onSwitch, language,
+}: {
+  devices: MediaDeviceInfo[]
+  activeDeviceId: string | null
+  onSwitch: (deviceId: string) => void
+  language: Language
+}) {
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onOutsideClick = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onOutsideClick)
+    return () => document.removeEventListener('mousedown', onOutsideClick)
+  }, [open])
+
+  if (devices.length === 0) return null
+
+  return (
+    <div className={styles.cameraChooseWrap} ref={wrapRef}>
+      <button
+        type="button"
+        className={styles.cameraSelect}
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        data-testid="camera-select"
+      >
+        {label(language, 'states.chooseCamera').main} ▾
+      </button>
+      {open && (
+        <div className={styles.cameraMenu} role="listbox" data-testid="camera-menu">
+          {devices.map((d, i) => (
+            <button
+              key={d.deviceId}
+              type="button"
+              role="option"
+              aria-selected={activeDeviceId === d.deviceId}
+              className={styles.cameraMenuItem}
+              data-testid={`camera-option-${d.deviceId}`}
+              onClick={() => { setOpen(false); onSwitch(d.deviceId) }}
+            >
+              {d.label || `Camera ${i + 1}`}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function CaptureScreen({
   frames, setFrames, fpsLevel, setFpsLevel, onExport,
   language, onionOpacity, onionEnabled, setOnionEnabled,
-  forcedCameraState, initialExportError = null,
+  forcedCameraState, initialExportError = null, preferredCameraDeviceId,
 }: Props) {
-  const { videoRef, state: liveCameraState, stream, devices, activeDeviceId, requestCamera, switchCamera, error } = useCamera()
+  const { videoRef, state: liveCameraState, stream, devices, activeDeviceId, requestCamera, switchCamera, error } = useCamera(preferredCameraDeviceId)
   // Gate fixture override (xem Props.forcedCameraState) — mọi logic dưới đây dùng chung biến
   // `state` như cũ, không phân nhánh thêm, nên hành vi thật (không truyền prop) không đổi.
   const state = forcedCameraState ?? liveCameraState
@@ -221,23 +283,13 @@ export default function CaptureScreen({
               >
                 {label(language, 'states.retry').main}
               </button>
+              <CameraDeviceChooser
+                devices={devices}
+                activeDeviceId={activeDeviceId}
+                onSwitch={id => void switchCamera(id)}
+                language={language}
+              />
             </div>
-            {devices.length > 0 && (
-              <select
-                className={styles.cameraSelect}
-                value={activeDeviceId ?? ''}
-                onChange={e => void switchCamera(e.target.value)}
-                aria-label={label(language, 'states.chooseCamera').main}
-                data-testid="camera-select"
-              >
-                <option value="" disabled>{label(language, 'states.chooseCamera').main}</option>
-                {devices.map((d, i) => (
-                  <option key={d.deviceId} value={d.deviceId}>
-                    {d.label || `Camera ${i + 1}`}
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
         )}
 
@@ -255,23 +307,13 @@ export default function CaptureScreen({
               >
                 {label(language, 'states.retry').main}
               </button>
+              <CameraDeviceChooser
+                devices={devices}
+                activeDeviceId={activeDeviceId}
+                onSwitch={id => void switchCamera(id)}
+                language={language}
+              />
             </div>
-            {devices.length > 0 && (
-              <select
-                className={styles.cameraSelect}
-                value={activeDeviceId ?? ''}
-                onChange={e => void switchCamera(e.target.value)}
-                aria-label={label(language, 'states.chooseCamera').main}
-                data-testid="camera-select"
-              >
-                <option value="" disabled>{label(language, 'states.chooseCamera').main}</option>
-                {devices.map((d, i) => (
-                  <option key={d.deviceId} value={d.deviceId}>
-                    {d.label || `Camera ${i + 1}`}
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
         )}
 
