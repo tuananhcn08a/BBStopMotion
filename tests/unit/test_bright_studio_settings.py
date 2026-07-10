@@ -20,7 +20,6 @@ from neo_stopmotion.services.app_controller import AppController
 from neo_stopmotion.services.library_service import LibraryEntry
 from neo_stopmotion.services.speed_selector import SpeedSelector
 
-
 # ---------------------------------------------------------------------------
 # config.settings — save_settings() persistence (F8, TS-BS-27)
 # ---------------------------------------------------------------------------
