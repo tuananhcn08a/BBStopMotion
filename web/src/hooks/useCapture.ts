@@ -4,6 +4,7 @@ import { CapturedFrame } from '../types'
 export interface UseCaptureReturn {
   captureFrame: (video: HTMLVideoElement) => CapturedFrame | null
   deleteLastFrame: (frames: CapturedFrame[]) => CapturedFrame[]
+  deleteFrameAt: (frames: CapturedFrame[], index: number) => CapturedFrame[]
   getOnionSkinFrame: (frames: CapturedFrame[]) => CapturedFrame | null
 }
 
@@ -38,10 +39,19 @@ export function useCapture(): UseCaptureReturn {
     return frames.slice(0, -1)
   }, [])
 
+  /**
+   * F1 — xoá frame bất kỳ theo index, re-index tự nhiên vì thứ tự hiển thị luôn theo
+   * vị trí mảng (TS-BS-01/02/03). Trả về mảng mới, không mutate.
+   */
+  const deleteFrameAt = useCallback((frames: CapturedFrame[], index: number): CapturedFrame[] => {
+    if (index < 0 || index >= frames.length) return frames
+    return [...frames.slice(0, index), ...frames.slice(index + 1)]
+  }, [])
+
   const getOnionSkinFrame = useCallback((frames: CapturedFrame[]): CapturedFrame | null => {
     if (frames.length === 0) return null
     return frames[frames.length - 1] ?? null
   }, [])
 
-  return { captureFrame, deleteLastFrame, getOnionSkinFrame }
+  return { captureFrame, deleteLastFrame, deleteFrameAt, getOnionSkinFrame }
 }

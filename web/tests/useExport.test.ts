@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import { renderHook, act } from '@testing-library/react'
 import { useExport, exportToMp4, _resetFfmpegInstance } from '../src/hooks/useExport'
+import type { ExportResult } from '../src/types'
 
 // Mock @ffmpeg/ffmpeg — hoisted, intercepts the lazy import('@ffmpeg/ffmpeg') inside useExport
 vi.mock('@ffmpeg/ffmpeg', () => ({
@@ -53,7 +54,7 @@ describe('useExport', () => {
     const { result } = renderHook(() => useExport())
     const frames = makeFrames(5)
 
-    let exportResult!: { blob: Blob; filename: string; uploadUrl?: string; uploadError?: string }
+    let exportResult!: ExportResult
     await act(async () => {
       exportResult = await result.current.exportVideo(frames, 'normal')
     })
@@ -74,7 +75,7 @@ describe('useExport', () => {
     const { result } = renderHook(() => useExport())
     const frames = makeFrames(5)
 
-    let exportResult!: { blob: Blob; filename: string; uploadUrl?: string; uploadError?: string }
+    let exportResult!: ExportResult
     await act(async () => {
       exportResult = await result.current.exportVideo(frames, 'normal')
     })
@@ -124,7 +125,7 @@ describe('useExport', () => {
     const { result } = renderHook(() => useExport())
     const frames = makeFrames(5)
 
-    let exportResult!: { blob: Blob; filename: string; uploadUrl?: string; uploadError?: string }
+    let exportResult!: ExportResult
     await act(async () => {
       exportResult = await result.current.exportVideo(frames, 'normal')
     })

@@ -1,7 +1,8 @@
 /**
- * Tests for App component — error handling path (T-W06)
+ * Tests for App component — error handling path (T-W06) + Welcome gate (F6)
  *
- * BA Scenarios: TS-04 (export error path), T-W06 AC (catch block shows Vietnamese error)
+ * BA Scenarios: TS-04 (export error path), T-W06 AC (catch block shows Vietnamese error),
+ * TS-BS-17 (Welcome hiện đầu phiên → bấm Bắt đầu vào Capture)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
@@ -15,8 +16,10 @@ const mockExportVideo = vi.fn()
 vi.mock('../src/hooks/useExport', () => ({
   useExport: () => ({
     exportVideo: mockExportVideo,
-    progressMessage: '',
+    isExporting: false,
+    progress: { stage: 'mp4', percent: 0 },
   }),
+  uploadExportedFile: vi.fn(),
 }))
 
 // ─── Mock useCamera so CaptureScreen renders without real getUserMedia ────────
@@ -42,6 +45,8 @@ vi.mock('../src/hooks/useCapture', () => ({
       timestamp: 0,
     }),
     deleteLastFrame: (frames: CapturedFrame[]) => frames.slice(0, -1),
+    deleteFrameAt: (frames: CapturedFrame[], index: number) =>
+      [...frames.slice(0, index), ...frames.slice(index + 1)],
     getOnionSkinFrame: (frames: CapturedFrame[]) =>
       frames.length > 0 ? frames[frames.length - 1] : null,
   }),
@@ -52,24 +57,40 @@ vi.mock('../src/components/SuccessScreen', () => ({
   default: () => <div data-testid="success-screen">SUCCESS</div>,
 }))
 vi.mock('../src/components/ExportProgress', () => ({
-  default: ({ message }: { message: string }) => (
-    <div data-testid="export-progress">{message}</div>
-  ),
+  default: () => <div data-testid="export-progress">EXPORTING</div>,
 }))
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Inject frames into App state by directly mounting with pre-loaded frames.
- *  We can't easily set state from outside, so we simulate clicking Export
- *  after mocking captureFrame to fill frames indirectly.
- *  Instead, we expose a test helper via the CaptureScreen onExport prop
- *  by relying on the fact that App passes onExport to CaptureScreen,
- *  which the real CaptureScreen calls when user triggers export.
- *
- *  Simpler approach: we mock CaptureScreen to expose a direct export trigger.
- */
+/** Bấm qua màn Welcome (F6 — luôn hiện đầu phiên, welcomeSeen không persist) để vào Capture. */
+async function dismissWelcome() {
+  const user = userEvent.setup()
+  const startBtn = await screen.findByRole('button', { name: /Bắt đầu làm phim/i })
+  await user.click(startBtn)
+}
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
+
+// Module graph phải reset trước MỖI test — dynamic import('../src/App') sau vi.doMock() chỉ
+// tôn trọng mock mới nếu cache module đã được xoá; nếu không, 1 test import App "thật" (không
+// doMock) sẽ làm các test sau vẫn thấy CaptureScreen thật đã cache thay vì bản doMock.
+beforeEach(() => {
+  vi.resetModules()
+})
+
+describe('App — Welcome gate (F6/TS-BS-17)', () => {
+  it('TS-BS-17: shows Welcome first; clicking Bắt đầu navigates to Capture (screen=capture)', async () => {
+    const { default: AppDynamic } = await import('../src/App')
+    render(<AppDynamic />)
+
+    expect(screen.getByRole('button', { name: /Bắt đầu làm phim/i })).toBeTruthy()
+    await dismissWelcome()
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sidebar')).toBeInTheDocument()
+    })
+  })
+})
 
 describe('App — handleExport error path (T-W06)', () => {
   beforeEach(() => {
@@ -108,9 +129,10 @@ describe('App — handleExport error path (T-W06)', () => {
     const { default: AppDynamic } = await import('../src/App')
 
     const { unmount } = render(<AppDynamic />)
+    await dismissWelcome()
 
     const user = userEvent.setup()
-    const triggerBtn = screen.getByTestId('trigger-export')
+    const triggerBtn = await screen.findByTestId('trigger-export')
     await user.click(triggerBtn)
 
     // Assert: error message in Vietnamese appears
@@ -163,9 +185,10 @@ describe('App — handleExport error path (T-W06)', () => {
 
     const { default: AppDynamic } = await import('../src/App')
     const { unmount } = render(<AppDynamic />)
+    await dismissWelcome()
 
     const user = userEvent.setup()
-    await user.click(screen.getByTestId('trigger-export'))
+    await user.click(await screen.findByTestId('trigger-export'))
 
     // No error overlay
     await waitFor(() => {

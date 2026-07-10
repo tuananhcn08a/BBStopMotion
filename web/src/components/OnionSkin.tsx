@@ -5,9 +5,11 @@ import styles from './OnionSkin.module.css'
 interface Props {
   frame: CapturedFrame | null
   visible: boolean
+  /** F3 — độ mờ 0..1, mặc định 0.4 (Bright Studio, ghi đè 0.30/0.35 cũ). */
+  opacity?: number
 }
 
-export default function OnionSkin({ frame, visible }: Props) {
+export default function OnionSkin({ frame, visible, opacity = 0.4 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -28,12 +30,12 @@ export default function OnionSkin({ frame, visible }: Props) {
       canvas.width = img.naturalWidth
       canvas.height = img.naturalHeight
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      ctx.globalAlpha = 0.35
+      ctx.globalAlpha = opacity
       ctx.drawImage(img, 0, 0)
       ctx.globalAlpha = 1
     }
     img.src = frame.dataUrl
-  }, [frame, visible])
+  }, [frame, visible, opacity])
 
   if (!visible || !frame) return null
 
@@ -43,6 +45,7 @@ export default function OnionSkin({ frame, visible }: Props) {
       className={styles.canvas}
       aria-hidden="true"
       data-testid="onion-skin"
+      data-opacity={opacity}
     />
   )
 }

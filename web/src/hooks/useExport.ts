@@ -11,7 +11,10 @@ interface NasUploadResponse {
 // NAS upload endpoint and token are read inside uploadFile (not captured at module level)
 // so that vi.stubEnv() can override them in tests and Vite still replaces them at build time.
 // Set VITE_UPLOAD_ENDPOINT + VITE_UPLOAD_TOKEN in .env.local — never commit real values.
-async function uploadFile(blob: Blob, filename: string): Promise<{ downloadUrl: string; expiresAt: string }> {
+export async function uploadExportedFile(
+  blob: Blob,
+  filename: string,
+): Promise<{ downloadUrl: string; expiresAt: string }> {
   const endpoint = import.meta.env.VITE_UPLOAD_ENDPOINT ?? ''
   const token = import.meta.env.VITE_UPLOAD_TOKEN ?? ''
   if (!endpoint) throw new Error('Upload endpoint not configured')
@@ -74,46 +77,71 @@ export async function exportToMp4(
   return new Blob([data], { type: 'video/mp4' })
 }
 
+/** 4 giai đoạn hiển thị trên card export 2b — TS-BS-28 (autoUpload OFF bỏ upload/qr). */
+export type ExportStage = 'mp4' | 'gif' | 'upload' | 'qr'
+
+export interface ExportProgressState {
+  stage: ExportStage
+  percent: number
+}
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
 export interface UseExportReturn {
-  exportVideo: (frames: CapturedFrame[], fpsLevel: FpsLevel) => Promise<ExportResult>
+  exportVideo: (frames: CapturedFrame[], fpsLevel: FpsLevel, autoUpload?: boolean) => Promise<ExportResult>
   isExporting: boolean
-  progressMessage: string
+  progress: ExportProgressState
 }
 
 export function useExport(): UseExportReturn {
   const [isExporting, setIsExporting] = useState(false)
-  const [progressMessage, setProgressMessage] = useState('')
+  const [progress, setProgress] = useState<ExportProgressState>({ stage: 'mp4', percent: 0 })
 
   const exportVideo = useCallback(async (
     frames: CapturedFrame[],
     fpsLevel: FpsLevel,
+    autoUpload: boolean = true,
   ): Promise<ExportResult> => {
     setIsExporting(true)
-    setProgressMessage('')
+    setProgress({ stage: 'mp4', percent: 0 })
     try {
       const fps = FPS_VALUES[fpsLevel]
       const dataUrls = frames.map(f => f.dataUrl)
-      const blob = await exportToMp4(dataUrls, fps, setProgressMessage)
+      let mp4Calls = 0
+      const blob = await exportToMp4(dataUrls, fps, () => {
+        mp4Calls += 1
+        setProgress({ stage: 'mp4', percent: mp4Calls === 1 ? 12 : 30 })
+      })
       const filename = `phim-cua-con-${Date.now()}.mp4`
+
+      // GIF stage — visual-only cho tới khi có pipeline GIF thật (ngoài phạm vi T-BS10).
+      setProgress({ stage: 'gif', percent: 48 })
+      await sleep(150)
+      setProgress({ stage: 'gif', percent: 62 })
 
       let uploadUrl: string | undefined
       let expiresAt: string | undefined
       let uploadError: string | undefined
 
-      try {
-        const uploaded = await uploadFile(blob, filename)
-        uploadUrl = uploaded.downloadUrl
-        expiresAt = uploaded.expiresAt
-      } catch (err) {
-        uploadError = err instanceof Error ? err.message : 'Upload thất bại'
+      if (autoUpload) {
+        setProgress({ stage: 'upload', percent: 75 })
+        try {
+          const uploaded = await uploadExportedFile(blob, filename)
+          uploadUrl = uploaded.downloadUrl
+          expiresAt = uploaded.expiresAt
+        } catch (err) {
+          uploadError = err instanceof Error ? err.message : 'Upload thất bại'
+        }
+        setProgress({ stage: 'qr', percent: 95 })
+        await sleep(100)
       }
 
+      setProgress({ stage: autoUpload ? 'qr' : 'gif', percent: 100 })
       return { blob, filename, uploadUrl, expiresAt, uploadError }
     } finally {
       setIsExporting(false)
-      setProgressMessage('')
     }
   }, [])
 
-  return { exportVideo, isExporting, progressMessage }
+  return { exportVideo, isExporting, progress }
 }

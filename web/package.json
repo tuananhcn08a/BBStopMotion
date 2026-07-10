@@ -7,7 +7,7 @@
     "postinstall": "node scripts/copy-ffmpeg.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint . --ext ts,tsx --max-warnings 0 && tsc --noEmit",
+    "lint": "eslint . --ext ts,tsx --max-warnings 0 && tsc -b",
     "preview": "vite preview",
     "test": "vitest run",
     "e2e": "node e2e/export.test.mjs",

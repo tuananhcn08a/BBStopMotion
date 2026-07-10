@@ -1,0 +1,110 @@
+/**
+ * F8/Q6b — auto-upload OFF (mặc định trên web): Success hiện banner "chưa tải lên" +
+ * nút "Tải lên ngay" thủ công thay vì QR mặc định. BA Scenario: TS-BS-28.
+ */
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import SuccessScreen from '../src/components/SuccessScreen'
+import type { ExportResult } from '../src/types'
+
+vi.mock('qrcode', () => ({
+  default: { toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,mockqr') },
+}))
+
+const mockUploadExportedFile = vi.fn()
+vi.mock('../src/hooks/useExport', () => ({
+  uploadExportedFile: (...args: unknown[]) => mockUploadExportedFile(...args),
+}))
+
+function makeResult(overrides: Partial<ExportResult> = {}): ExportResult {
+  return {
+    blob: new Blob(['fake'], { type: 'video/mp4' }),
+    filename: 'phim-test.mp4',
+    ...overrides,
+  }
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  vi.stubGlobal('URL', {
+    createObjectURL: vi.fn().mockReturnValue('blob:mock'),
+    revokeObjectURL: vi.fn(),
+  })
+})
+
+describe('SuccessScreen — auto-upload OFF (F8/TS-BS-28)', () => {
+  it('autoUpload=false, chưa có uploadUrl → hiện banner "chưa tải lên" + nút "Tải lên ngay" thay vì QR', () => {
+    render(
+      <SuccessScreen
+        result={makeResult()}
+        onNewFilm={vi.fn()}
+        language="vi+en"
+        frameCount={10}
+        durationSeconds={2}
+        autoUpload={false}
+      />
+    )
+    expect(screen.getByTestId('not-uploaded-card')).toBeInTheDocument()
+    expect(screen.getByTestId('upload-now-btn')).toBeInTheDocument()
+    expect(screen.queryByTestId('qr-card')).not.toBeInTheDocument()
+  })
+
+  it('bấm "Tải lên ngay" gọi uploadExportedFile, thành công → hiện QR + parent-notice', async () => {
+    mockUploadExportedFile.mockResolvedValue({
+      downloadUrl: 'https://example.com/movie.mp4',
+      expiresAt: '2026-07-20T00:00:00Z',
+    })
+    render(
+      <SuccessScreen
+        result={makeResult()}
+        onNewFilm={vi.fn()}
+        language="vi+en"
+        frameCount={10}
+        durationSeconds={2}
+        autoUpload={false}
+      />
+    )
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('upload-now-btn'))
+
+    await waitFor(() => {
+      expect(mockUploadExportedFile).toHaveBeenCalledWith(expect.any(Blob), 'phim-test.mp4')
+    })
+    await waitFor(() => {
+      expect(screen.getByTestId('parent-notice')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('not-uploaded-card')).not.toBeInTheDocument()
+  })
+
+  it('đã có uploadUrl sẵn (vd autoUpload=true thành công) → hiện thẳng QR card, không hiện nút Tải lên ngay', async () => {
+    render(
+      <SuccessScreen
+        result={makeResult({ uploadUrl: 'https://example.com/movie.mp4', expiresAt: '2026-07-20T00:00:00Z' })}
+        onNewFilm={vi.fn()}
+        language="vi+en"
+        frameCount={10}
+        durationSeconds={2}
+        autoUpload={true}
+      />
+    )
+    await waitFor(() => {
+      expect(screen.getByTestId('parent-notice')).toBeInTheDocument()
+    })
+    expect(screen.queryByTestId('upload-now-btn')).not.toBeInTheDocument()
+  })
+
+  it('Tải về máy luôn khả dụng bất kể trạng thái upload (degraded success — TS-BS-31)', () => {
+    render(
+      <SuccessScreen
+        result={makeResult()}
+        onNewFilm={vi.fn()}
+        language="vi+en"
+        frameCount={10}
+        durationSeconds={2}
+        autoUpload={false}
+      />
+    )
+    expect(screen.getByLabelText('Tải phim về máy')).toBeInTheDocument()
+  })
+})

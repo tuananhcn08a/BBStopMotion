@@ -1,0 +1,125 @@
+.screen {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--color-bg-base);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 40px 20px;
+}
+
+.deco {
+  position: absolute;
+  opacity: 0.5;
+  font-size: 30px;
+}
+.decoTl { top: 40px; left: 60px; }
+.decoTr { top: 90px; right: 90px; font-size: 26px; }
+.decoBl { bottom: 70px; left: 120px; font-size: 26px; }
+.decoBr { bottom: 100px; right: 70px; }
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logoIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 20px;
+}
+
+.wordmark {
+  font-weight: 800;
+  font-size: 30px;
+  color: var(--color-text-primary);
+}
+
+.wordmarkAccent {
+  color: var(--color-primary);
+}
+
+.titleWrap {
+  text-align: center;
+}
+
+.title {
+  font-size: var(--typ-display);
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+.sub {
+  font-size: 18px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.cards {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.card {
+  width: 220px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.cardIcon {
+  font-size: 34px;
+}
+
+.cardTitle {
+  font-weight: 800;
+  font-size: 16px;
+  margin-top: 8px;
+  color: var(--color-text-primary);
+}
+
+.cardDesc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-top: 4px;
+}
+
+.cta {
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 20px 56px;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 22px;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: var(--shadow-cta);
+}
+
+.ctaHint {
+  font-size: 13px;
+  color: var(--color-text-disabled);
+  font-weight: 600;
+}

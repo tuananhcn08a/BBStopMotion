@@ -40,6 +40,8 @@ vi.mock('../src/hooks/useCapture', () => ({
       timestamp: Date.now(),
     }),
     deleteLastFrame: (frames: CapturedFrame[]) => frames.slice(0, -1),
+    deleteFrameAt: (frames: CapturedFrame[], index: number) =>
+      [...frames.slice(0, index), ...frames.slice(index + 1)],
     getOnionSkinFrame: (frames: CapturedFrame[]) =>
       frames.length > 0 ? frames[frames.length - 1] : null,
   }),
@@ -66,6 +68,7 @@ function renderCaptureScreen(
 ) {
   const setFrames = vi.fn()
   const setFpsLevel = vi.fn()
+  const setOnionEnabled = vi.fn()
   const { rerender } = render(
     <CaptureScreen
       frames={frames}
@@ -73,9 +76,13 @@ function renderCaptureScreen(
       fpsLevel={fpsLevel}
       setFpsLevel={setFpsLevel}
       onExport={onExport}
+      language="vi+en"
+      onionOpacity={0.4}
+      onionEnabled={true}
+      setOnionEnabled={setOnionEnabled}
     />
   )
-  return { setFrames, setFpsLevel, onExport, rerender }
+  return { setFrames, setFpsLevel, onExport, setOnionEnabled, rerender }
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -350,9 +357,11 @@ describe('CaptureScreen — camera inline states', () => {
 
   // ─── TS-13: 0 frames filmstrip ────────────────────────────────────────────
 
-  it('TS-13: Filmstrip shows 0 frames initially', () => {
+  it('TS-13: Filmstrip shows 0 frames initially (empty slot #1, no thumbs)', () => {
     useCameraMock.mockReturnValue(makeCameraMock('live'))
     renderCaptureScreen([])
-    expect(screen.getByText('0 frame')).toBeInTheDocument()
+    const filmstrip = screen.getByTestId('filmstrip')
+    expect(filmstrip.querySelectorAll('[data-testid^="thumb-"]')).toHaveLength(0)
+    expect(screen.getByLabelText('Slot frame tiếp theo')).toHaveTextContent('1')
   })
 })

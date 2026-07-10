@@ -1,12 +1,19 @@
-.screen {
+.wrap {
+  flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100vh;
-  background: var(--color-bg-base);
-  gap: var(--space-lg);
+}
+
+.card {
+  width: 560px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: 48px;
   text-align: center;
+  box-shadow: var(--shadow-card);
+  box-sizing: border-box;
 }
 
 .icon {
@@ -22,24 +29,56 @@
 .title {
   font-size: var(--typ-heading);
   font-weight: 800;
+  margin-top: 16px;
   color: var(--color-text-primary);
 }
 
-.spinner {
-  width: 48px;
-  height: 48px;
-  border: 5px solid var(--color-border-subtle);
-  border-top-color: var(--color-accent-capture);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.hint {
-  font-size: var(--typ-body-sm);
-  font-weight: 700;
+.sub {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--color-text-secondary);
+}
+
+.track {
+  margin-top: 28px;
+  height: 14px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tint);
+  overflow: hidden;
+}
+
+.fill {
+  height: 14px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  transition: width var(--motion-normal);
+}
+
+.stages {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-disabled);
+}
+
+.stageDone {
+  color: var(--color-success);
+}
+
+.stageActive {
+  color: var(--color-primary);
+}
+
+.banner {
+  margin-top: 24px;
+  background: var(--color-warn-surface);
+  border: 1px solid var(--color-warn-border);
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-warn-text);
 }

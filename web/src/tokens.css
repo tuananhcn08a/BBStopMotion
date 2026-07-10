@@ -1,67 +1,81 @@
-/* Cinema Bright design tokens — NeoStopMotion */
-/* Source: docs/03-codebase/design/tokens.md */
+/* "Bright Studio" design tokens — BBStopMotion web */
+/* Source: docs/04-phases/neo-stopmotion/phase-04-bright-studio-redesign/assets/mockups/tokens.css */
 
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Background */
-  --color-bg-base: #0F1923;
-  --color-bg-surface: #1A2733;
-  --color-bg-elevated: #243342;
-  --color-bg-preview: #0A1219;
+  /* ---------- Background ---------- */
+  --color-bg-base: #F3F6FB;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-tint: #E9F1FE;
+  --color-bg-preview: #101E33;
+  --color-bg-preview-alt: #14243C;
+  --color-bg-preview-overlay: rgba(16, 30, 51, 0.75);
 
-  /* Accent */
+  /* ---------- Accent ---------- */
+  --color-primary: #1B6EF3;
+  --color-primary-deep: #0F55C8;
   --color-accent-capture: #FF6B35;
-  --color-accent-capture-deep: #FF4500;
-  --color-accent-capture-glow: rgba(255, 107, 53, 0.35);
-  --color-accent-capture-glow-active: rgba(255, 107, 53, 0.55);
-  --color-accent-success: #34C759;
-  --color-accent-info: #0A84FF;
-  --color-accent-warn: #FFD60A;
-  --color-accent-warn-dark: #7A6200;
+  --color-accent-capture-ring: #FFD9C7;
 
-  /* Text */
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #8E9BAA;
-  --color-text-disabled: #4A5A6B;
-  --color-text-on-warn: #3A2E00;
+  --color-success: #21A85C;
+  --color-success-surface: #E7F6EE;
+  --color-success-border: #BFE8D0;
 
-  /* Border */
-  --color-border-subtle: #2D3E4F;
-  --color-border-focus: #FF6B35;
-  --color-border-active: rgba(255, 255, 255, 0.15);
+  --color-warn-text: #A96A00;
+  --color-warn-surface: #FFF6E8;
+  --color-warn-border: #FFE3B8;
 
-  /* Status */
   --color-error: #FF453A;
-  --color-error-surface: #2D1A1A;
-  --color-live-dot: #FF453A;
-  --color-thumb-selected: #FF6B35;
-  --color-flash-capture: rgba(255, 255, 255, 0.85);
+  --color-error-deep: #C0392B;
+  --color-error-surface: #FDECEB;
+  --color-error-border: #F6C9C5;
 
-  /* Border radius */
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
+  /* ---------- Text ---------- */
+  --color-text-primary: #1C3255;
+  --color-text-secondary: #6B7C93;
+  --color-text-disabled: #9AA8BC;
+  --color-text-on-dark: #C9D8EE;
+  --color-text-on-dark-dim: #8FA6C6;
+  --color-text-on-tint-active: #7FA8EE;
+
+  /* ---------- Border ---------- */
+  --color-border: #E3EAF4;
+  --color-border-soft: #E9EFF7;
+  --color-divider: #EEF3FA;
+  --color-border-dashed: #C4D2E5;
+
+  /* ---------- Radius ---------- */
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
   --radius-full: 9999px;
 
-  /* Spacing */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 40px;
-  --space-2xl: 64px;
+  /* ---------- Typography ---------- */
+  --font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
+  --typ-display: 46px;
+  --typ-title: 38px;
+  --typ-heading: 30px;
+  --typ-counter: 30px;
+  --typ-body-lg: 17px;
+  --typ-body: 15px;
+  --typ-caption: 13px;
+  --typ-micro: 11px;
 
-  /* Typography */
-  --font-family: 'Nunito', 'Segoe UI', system-ui, sans-serif;
-  --typ-display: 64px;
-  --typ-heading: 32px;
-  --typ-body: 20px;
-  --typ-body-sm: 18px;
-  --typ-caption: 15px;
-  --typ-caption-sm: 13px;
+  /* ---------- Shadow ---------- */
+  --shadow-card: 0 10px 30px rgba(28, 50, 85, 0.08);
+  --shadow-btn-primary: 0 6px 16px rgba(27, 110, 243, 0.30);
+  --shadow-btn-primary-lg: 0 8px 20px rgba(27, 110, 243, 0.30);
+  --shadow-btn-capture: 0 10px 24px rgba(255, 107, 53, 0.35);
+  --shadow-cta: 0 12px 30px rgba(27, 110, 243, 0.35);
 
-  /* Motion */
+  /* ---------- Hit target ---------- */
+  --hit-target-min: 44px;
+  --hit-target-primary: 84px;
+
+  /* ---------- Motion ---------- */
   --motion-fast: 80ms ease-out;
   --motion-normal: 200ms ease-out;
   --motion-slow: 280ms ease-out;

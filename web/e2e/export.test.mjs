@@ -58,6 +58,11 @@ await page.evaluate(() => {
     window.__err.push('ERROR: ' + e.message))
 })
 
+// Bright Studio redesign (T-BS10): app mở màn Welcome (F6) trước khi vào Capture — bấm qua.
+await page.waitForSelector('[data-landmark="welcome-cta"]', { timeout: 10000 }).catch(() => {})
+await page.click('[data-landmark="welcome-cta"]').catch(() => {})
+await sleep(200)
+
 // Chờ camera THẬT SỰ sẵn sàng (readyState 4 + có kích thước) — tối đa 20s
 for (let i = 0; i < 40; i++) {
   const ready = await page.evaluate(() => {
@@ -74,8 +79,12 @@ for (let i = 0; i < 6; i++) {
   await sleep(400)
 }
 
+// Đọc số frame từ frame-counter trên camera preview (data-landmark), KHÔNG dùng regex quét
+// toàn body — sidebar (Card Tiến độ Bright Studio) cũng có chữ "N / 30 frame" gây nhầm match.
 const fc = await page.evaluate(() => {
-  const m = document.body.innerText.match(/(\d+)\s*FRAME/i); return m ? m[1] : '?'
+  const el = document.querySelector('[data-landmark="frame-counter"]')
+  const m = el?.textContent?.match(/^(\d+)/)
+  return m ? m[1] : '?'
 })
 console.log('FRAME đã chụp:', fc)
 

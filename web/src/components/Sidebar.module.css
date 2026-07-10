@@ -1,0 +1,171 @@
+.sidebar {
+  width: 248px;
+  flex-shrink: 0;
+  background: var(--color-bg-surface);
+  border-right: 1px solid var(--color-border-soft);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  transition: opacity var(--motion-normal);
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 20px 8px;
+}
+
+.logoIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.wordmark {
+  font-weight: 800;
+  font-size: 17px;
+  color: var(--color-text-primary);
+}
+
+.wordmarkAccent {
+  color: var(--color-primary);
+}
+
+.navList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 15px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.navItem:disabled {
+  cursor: not-allowed;
+}
+
+.navItemActive {
+  background: var(--color-bg-tint);
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.navIcon {
+  font-size: 18px;
+}
+
+.navSub {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-disabled);
+}
+
+.navItemActive .navSub {
+  color: var(--color-text-on-tint-active);
+}
+
+.progressCard {
+  margin-top: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.progressLabel {
+  font-size: var(--typ-micro);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--color-text-secondary);
+}
+
+.progressNum {
+  font-size: 34px;
+  font-weight: 800;
+  margin-top: 6px;
+  color: var(--color-text-primary);
+}
+
+.progressGoal {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
+
+.progressTrack {
+  margin-top: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tint);
+  position: relative;
+}
+
+.progressFill {
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  transition: width var(--motion-normal);
+}
+
+.progressStar {
+  position: absolute;
+  right: -4px;
+  top: -6px;
+  font-size: 15px;
+}
+
+.progressHint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: 10px;
+  line-height: 1.45;
+}
+
+.progressHint b {
+  color: var(--color-text-primary);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.helpItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-size: 14px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
