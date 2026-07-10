@@ -105,6 +105,9 @@ class LibraryEntry:
             "session_dir": str(self.session_dir),
             "title": self.display_title,
             "raw_title": self.title,
+            # T-BS30 (F7): ISO 8601 để QML lọc "Hôm nay"/"Tuần này" chính xác
+            # (date_label là chuỗi đã format tiếng Việt, không parse được bằng Date()).
+            "created_at": self.created_at.isoformat(),
             "date_label": self.date_label,
             "frame_count": self.frame_count,
             "fps_label": self.fps_label,

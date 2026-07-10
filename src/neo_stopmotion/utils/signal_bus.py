@@ -27,7 +27,8 @@ class SignalBus(QObject):
     export_completed = pyqtSignal(dict)
     export_failed = pyqtSignal(str)
 
-    # Share
+    # Share — T-BS30 (F7/F8): retry_upload() result (share_url, qr_path);
+    # both "" on failure.
     share_url_ready = pyqtSignal(str, str)
 
     # T-007: save-video result (success, message/path or error)

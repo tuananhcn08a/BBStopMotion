@@ -7,7 +7,7 @@ from loguru import logger
 from PyQt6.QtCore import QObject, QTimer, QUrl, pyqtSignal
 from PyQt6.QtQml import QQmlApplicationEngine
 
-from neo_stopmotion.config.settings import AppSettings, load_settings
+from neo_stopmotion.config.settings import DEFAULT_USER_CONFIG_PATH, AppSettings, load_settings
 from neo_stopmotion.core.capture_engine import CaptureEngine, CaptureError
 from neo_stopmotion.core.cloud_uploader import CloudUploader
 from neo_stopmotion.core.synthetic_capture import SyntheticCaptureEngine
@@ -44,6 +44,8 @@ class _SignalBusBridge(QObject):
     statusMessage = pyqtSignal(str, str)
     # T-007: save-video
     saveVideoResult = pyqtSignal(bool, str)  # (success, message)
+    # T-BS30 (F7/F8): retry_upload() result — (share_url, qr_path), both "" on failure
+    shareUrlReady = pyqtSignal(str, str)
 
     def __init__(self, bus: SignalBus) -> None:
         super().__init__()
@@ -61,6 +63,7 @@ class _SignalBusBridge(QObject):
         bus.export_failed.connect(self.exportFailed)
         bus.status_message.connect(self.statusMessage)
         bus.save_video_result.connect(self.saveVideoResult)
+        bus.share_url_ready.connect(self.shareUrlReady)
 
     def _on_export_completed(self, payload: dict) -> None:
         self.exportCompleted.emit(
@@ -69,6 +72,31 @@ class _SignalBusBridge(QObject):
             payload.get("share_url", ""),
             payload.get("qr_path", ""),
         )
+
+
+def _register_fonts() -> None:
+    """Register bundled Plus Jakarta Sans font (T-BS30 — Bright Studio typography).
+
+    Must run after QApplication/QGuiApplication is constructed (QFontDatabase
+    needs a live QGuiApplication). Failure is non-fatal — QML falls back to
+    NeoConstants.fontFamily's platform default via Qt's font substitution.
+
+    Import is local (not module-level) so this module still imports cleanly
+    under tests/conftest.py's lightweight PyQt6 stub (no real Qt install).
+    """
+    from PyQt6.QtGui import QFontDatabase  # noqa: PLC0415
+
+    fonts_dir = Path(__file__).parent / "resources" / "fonts"
+    if not fonts_dir.exists():
+        logger.warning(f"Fonts dir not found: {fonts_dir}")
+        return
+    for font_path in sorted(fonts_dir.glob("*.ttf")):
+        font_id = QFontDatabase.addApplicationFont(str(font_path))
+        if font_id == -1:
+            logger.warning(f"Failed to register font: {font_path}")
+        else:
+            families = QFontDatabase.applicationFontFamilies(font_id)
+            logger.info(f"Registered font {font_path.name} -> {list(families)}")
 
 
 def _resolve_ffmpeg(configured: str) -> str:
@@ -147,6 +175,15 @@ def run() -> int:
     app.setApplicationName("NeoStopMotion")
     app.setOrganizationName("MakerViet")
 
+    # T-BS30: register Plus Jakarta Sans before any QML Text is created, then
+    # make it the app-wide default font so every QML Text/Control inherits it
+    # (QtQuick's `font` property cascades down the item tree from the root
+    # window's font, which starts out equal to QGuiApplication.font()) even
+    # for components that don't set font.family explicitly.
+    _register_fonts()
+    from PyQt6.QtGui import QFont  # noqa: PLC0415
+    app.setFont(QFont("Plus Jakarta Sans"))
+
     bus = SignalBus.instance()
 
     use_synthetic = os.environ.get("NEO_STOPMOTION_CAPTURE", "").lower() == "synthetic"
@@ -219,6 +256,8 @@ def run() -> int:
         min_frames=settings.export.min_frames,
         camera_selector=camera_selector,
         library_service=library_service,
+        settings=settings,
+        settings_path=DEFAULT_USER_CONFIG_PATH,
     )
 
     uart_mode = settings.uart.port
@@ -264,6 +303,12 @@ def run() -> int:
     engine.rootContext().setContextProperty("appController", controller)
     engine.rootContext().setContextProperty("signalBusBridge", bridge)
     engine.rootContext().setContextProperty("resourcesUrl", resources_url)
+    # T-BS30 (visual diff gate): jump straight to a screen after splash,
+    # skipping Space/nav clicks — needed to grab 2a/1g/1h with grab-qml.sh.
+    # Values: "capture" (default) | "library" | "settings". 2b/2c are still
+    # reached via NEO_STOPMOTION_AUTOSHOOT/AUTOEXPORT + grab delay (verify/README.md).
+    initial_screen = os.environ.get("NEO_STOPMOTION_SCREEN", "capture")
+    engine.rootContext().setContextProperty("initialScreen", initial_screen)
     engine.load(QUrl.fromLocalFile(str(main_qml_path())))
 
     if not engine.rootObjects():

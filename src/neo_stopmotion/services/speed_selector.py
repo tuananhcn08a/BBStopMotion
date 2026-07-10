@@ -39,8 +39,13 @@ class SpeedSelector:
     UI layer reads `selected_fps` and passes it to ExportService at export time.
     """
 
-    def __init__(self) -> None:
-        self._selected_label: str = _DEFAULT_LABEL
+    def __init__(self, default_label: str = _DEFAULT_LABEL) -> None:
+        if default_label not in _LABEL_TO_FPS:
+            default_label = _DEFAULT_LABEL
+        # T-BS30 (F8): "Tốc độ mặc định" trong Settings — áp dụng khi bắt đầu
+        # phiên mới (reset()), không đổi giá trị PO-confirmed cho từng label.
+        self._default_label: str = default_label
+        self._selected_label: str = default_label
         # None = user has not manually chosen (suggestion may still show)
         self._user_chosen: bool = False
 
@@ -82,9 +87,21 @@ class SpeedSelector:
         self._user_chosen = True
 
     def reset(self) -> None:
-        """Reset to default (Vua / 8fps) — called on session reset."""
-        self._selected_label = _DEFAULT_LABEL
+        """Reset to the configured default (F8: 'Tốc độ mặc định') — called on session reset."""
+        self._selected_label = self._default_label
         self._user_chosen = False
+
+    def set_default_label(self, label: str) -> None:
+        """Change the default speed applied by reset() (T-BS30 Settings F8).
+
+        Raises ValueError for unknown labels. Does NOT change the currently
+        selected speed of a session already in progress (spec: applies to the
+        *next* new session), matching goal_frames' "no re-shoot needed" model
+        being the exception, not the rule, for this particular setting.
+        """
+        if label not in _LABEL_TO_FPS:
+            raise ValueError(f"Unknown speed label: {label!r}. Valid: {list(_LABEL_TO_FPS)}")
+        self._default_label = label
 
     # ------------------------------------------------------------------
     # Auto-suggestion (spec §"Gợi ý tự động")

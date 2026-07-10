@@ -112,9 +112,10 @@ Popup {
                     SectionHeader { sectionTitle: "Màn Chụp ảnh" }
 
                     ShortcutRow { keys: "◀  ▶"; description: "Chọn tấm trong filmstrip" }
-                    ShortcutRow { keys: "Esc"; description: "Bỏ chọn tấm / đóng popup" }
+                    ShortcutRow { keys: "Esc"; description: "Bỏ chọn tấm / đóng popup / thoát xem lại" }
                     ShortcutRow { keys: "C"; description: "Mở popup đổi camera" }
                     ShortcutRow { keys: "G"; description: "Xem thư viện phim" }
+                    ShortcutRow { keys: "P"; description: "Xem lại phim (flipbook các frame đã chụp)" }
                     ShortcutRow { keys: "1  2  3"; description: "Tốc độ Chậm / Vừa / Nhanh" }
                     ShortcutRow { keys: "?  F1"; description: "Mở / đóng overlay phím tắt này" }
 

@@ -1,7 +1,7 @@
 [app]
 name = "NeoStopMotion"
 version = "1.0.0"
-language = "vi"
+language = "vi+en"
 debug = false
 
 [capture]
@@ -9,8 +9,9 @@ webcam_index = 0
 resolution_width = 1280
 resolution_height = 720
 preview_fps = 30
-onion_opacity = 0.30
+onion_opacity = 0.40
 auto_retry_count = 3
+default_fps_level = "Vua"
 
 [uart]
 port = "auto"
@@ -26,6 +27,7 @@ mp4_codec = "libx264"
 mp4_pix_fmt = "yuv420p"
 gif_scale_width = 640
 ffmpeg_binary = "ffmpeg"
+goal_frames = 30
 
 [storage]
 projects_dir = "~/projects"
@@ -40,9 +42,12 @@ qr_size = 400
 fullscreen = false
 window_width = 1920
 window_height = 1080
-font_family = "Be Vietnam Pro"
+font_family = "Plus Jakarta Sans"
 sound_enabled = true
 flash_on_capture = true
 show_countdown = true
 show_thumbnail_strip = true
 ask_title_before_export = true
+
+[upload]
+auto_upload = true

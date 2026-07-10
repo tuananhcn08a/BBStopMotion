@@ -1,5 +1,6 @@
-// FilmStrip.qml — Dải thumbnail ngang cho frame-review-delete (T-004)
-// Design: docs/01-specs/features/frame-review-delete/design-spec.md
+// FilmStrip.qml — T-BS30 → 2a filmstrip (redline: assets/redline/2a-capture.md §Filmstrip)
+// F1: xoá frame bất kỳ — hover thumbnail bất kỳ → viền đỏ + nút × 22px, xoá NGAY
+// (không confirm, đồng nhất BR-05). Giữ phím tắt cũ (◀▶ chọn, Del xoá) — TS-BS-32.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -8,232 +9,214 @@ import "../singletons" as N
 Rectangle {
     id: root
 
-    // ---------------------------------------------------------------------------
-    // Public API
-    // ---------------------------------------------------------------------------
-
     // List of file:// paths (with cache-busting suffix) — set from CapturePage
     property var framePaths: []
 
-    // Currently selected index (1-based; 0 = nothing selected)
+    // Currently selected index (1-based; 0 = nothing selected) — bàn phím ◀▶/Del.
     property int selectedIndex: 0
-
-    // Read-only: expose selected to parent
     readonly property int currentSelectedIndex: selectedIndex
 
-    // Signals to CapturePage
-    signal deleteRequested(int frameIndex)  // 1-based index the user wants to delete
+    // Xoá tương tác được không (khoá lúc đang xem lại / EXPORTING — F1 edge case)
+    property bool interactive: true
 
-    // ---------------------------------------------------------------------------
-    // Appearance
-    // ---------------------------------------------------------------------------
+    signal deleteRequested(int frameIndex)  // 1-based index — xoá NGAY, không confirm (F1)
 
-    height: 120
-    radius: 12
-    color: N.NeoConstants.surface
-    border.width: selectedIndex > 0 ? 2 : 1
-    border.color: selectedIndex > 0 ? N.NeoConstants.primary : "#E0E0E0"
+    radius: N.NeoConstants.radiusL
+    color: N.NeoConstants.surfaceCard
+    border.width: 1
+    border.color: N.NeoConstants.borderCard
 
-    // Internal refresh helper: reload paths from controller
     function refresh() {
         root.framePaths = appController.get_frame_paths()
     }
 
-    // Keyboard navigation — left/right arrows, Delete, Escape
-    Keys.onLeftPressed: {
-        if (selectedIndex > 1) selectedIndex -= 1
-    }
-    Keys.onRightPressed: {
-        if (selectedIndex < framePaths.length) selectedIndex += 1
-    }
-    Keys.onDeletePressed: {
-        if (selectedIndex > 0) root.deleteRequested(selectedIndex)
-    }
-    Keys.onEscapePressed: {
-        selectedIndex = 0
-    }
+    Keys.onLeftPressed: { if (selectedIndex > 1) selectedIndex -= 1 }
+    Keys.onRightPressed: { if (selectedIndex < framePaths.length) selectedIndex += 1 }
+    Keys.onDeletePressed: { if (selectedIndex > 0 && root.interactive) root.deleteRequested(selectedIndex) }
+    Keys.onEscapePressed: { selectedIndex = 0 }
 
-    // ---------------------------------------------------------------------------
-    // Empty-state placeholder
-    // ---------------------------------------------------------------------------
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.margins: 14
+        spacing: 8
 
-    Text {
-        anchors.centerIn: parent
-        visible: root.framePaths.length === 0
-        text: "Chụp tấm đầu tiên đi!"
-        font.pixelSize: N.NeoConstants.fontCaption
-        color: N.NeoConstants.textSecondary
-    }
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
 
-    // ---------------------------------------------------------------------------
-    // Thumbnail ListView
-    // ---------------------------------------------------------------------------
+            Text {
+                text: N.AppState.language === "vi" ? "CÁC FRAME ĐÃ CHỤP"
+                    : N.AppState.language === "en" ? "CAPTURED FRAMES"
+                    : "CÁC FRAME ĐÃ CHỤP · CAPTURED FRAMES"
+                font.family: N.NeoConstants.fontFamily
+                font.pixelSize: 12
+                font.weight: Font.ExtraBold
+                font.letterSpacing: 0.9
+                color: N.NeoConstants.slate
+            }
 
-    ListView {
-        id: listView
-        visible: root.framePaths.length > 0
+            Item { Layout.fillWidth: true }
 
-        anchors {
-            left: parent.left
-            right: deleteBtn.left
-            top: parent.top
-            bottom: parent.bottom
-            leftMargin: N.NeoConstants.spacingM
-            rightMargin: N.NeoConstants.spacingS
-            topMargin: N.NeoConstants.spacingS
-            bottomMargin: N.NeoConstants.spacingS
-        }
-
-        orientation: ListView.Horizontal
-        spacing: N.NeoConstants.spacingS
-        clip: true
-        model: root.framePaths
-
-        // Auto-scroll to end on new frame
-        onCountChanged: {
-            if (count > 0) positionViewAtEnd()
-        }
-
-        ScrollBar.horizontal: ScrollBar {
-            height: 4
-            policy: ScrollBar.AsNeeded
-            contentItem: Rectangle {
-                color: N.NeoConstants.primary
-                opacity: 0.4
-                radius: 2
+            Text {
+                text: N.AppState.language === "en" ? "Hover a frame to preview or delete it"
+                    : "Rê chuột lên frame để xem lại hoặc xoá frame bất kỳ"
+                font.family: N.NeoConstants.fontFamily
+                font.pixelSize: 12
+                color: N.NeoConstants.slateMuted
             }
         }
 
-        delegate: Item {
-            id: thumbItem
+        Text {
+            visible: root.framePaths.length === 0
+            text: N.AppState.language === "en" ? "Take your first frame!" : "Chụp tấm đầu tiên đi!"
+            font.family: N.NeoConstants.fontFamily
+            font.pixelSize: N.NeoConstants.fontCaption
+            color: N.NeoConstants.slateMuted
+        }
 
-            // modelData is "file://...?t=..." path
-            required property string modelData
-            required property int index
+        ListView {
+            id: listView
+            visible: root.framePaths.length > 0
+            Layout.fillWidth: true
+            Layout.preferredHeight: 76
 
-            // 1-based index for this delegate
-            readonly property int frameNum: index + 1
-            readonly property bool isSelected: root.selectedIndex === frameNum
+            orientation: ListView.Horizontal
+            spacing: 8
+            clip: true
+            model: root.framePaths
 
-            width: 96   // 80px thumb + 8px padding each side
-            height: listView.height
+            onCountChanged: if (count > 0) positionViewAtEnd()
 
-            // Animate scale on selection (selection border drawn by thumbContainer)
-            scale: isSelected ? 1.08 : 1.0
-            Behavior on scale {
-                NumberAnimation { duration: 150 }
+            ScrollBar.horizontal: ScrollBar {
+                height: 4
+                policy: ScrollBar.AsNeeded
             }
 
-            Column {
-                anchors.centerIn: parent
-                spacing: 4
+            delegate: Item {
+                id: thumbItem
+                required property string modelData
+                required property int index
 
-                // Thumbnail image
+                readonly property int frameNum: index + 1
+                readonly property bool isNewest: frameNum === root.framePaths.length
+                readonly property bool isSelected: root.selectedIndex === frameNum
+
+                width: 96
+                height: 76
+
                 Rectangle {
                     id: thumbContainer
-                    width: 80
+                    width: 96
                     height: 60
-                    radius: 8
-                    color: "#F0F0F0"  // placeholder bg
-                    border.width: thumbItem.isSelected ? 3 : (thumbMouse.containsMouse ? 2 : 0)
-                    border.color: thumbItem.isSelected
-                        ? N.NeoConstants.primary
-                        : N.NeoConstants.warning
+                    radius: N.NeoConstants.radiusS
+                    color: N.NeoConstants.thumbBg
+                    clip: true
+
+                    border.width: thumbItem.isNewest ? 3 : (thumbItem.isSelected ? 2 : 0)
+                    border.color: thumbItem.isNewest ? N.NeoConstants.brightPrimary : N.NeoConstants.brightPrimary
 
                     Image {
                         anchors.fill: parent
-                        anchors.margins: 1
+                        anchors.margins: thumbItem.isNewest ? 3 : (thumbItem.isSelected ? 2 : 0)
                         source: thumbItem.modelData
                         fillMode: Image.PreserveAspectCrop
                         asynchronous: true
-                        cache: false   // disable QML cache — spec §8b cache-busting
+                        cache: false
                         smooth: true
-                        clip: true
+                    }
 
-                        Rectangle {
+                    // Frame index chip (bottom-left)
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.bottom: parent.bottom
+                        anchors.margins: 4
+                        height: 16
+                        width: idxLabel.implicitWidth + 12
+                        radius: 5
+                        color: thumbItem.isNewest ? N.NeoConstants.brightPrimary : N.NeoConstants.previewOverlay
+                        Text {
+                            id: idxLabel
+                            anchors.centerIn: parent
+                            text: thumbItem.frameNum
+                            font.family: N.NeoConstants.fontFamily
+                            font.pixelSize: 10
+                            font.weight: Font.ExtraBold
+                            color: "#FFFFFF"
+                        }
+                    }
+
+                    // Hover delete overlay (F1) — viền đỏ + nút × 22px
+                    Rectangle {
+                        anchors.fill: parent
+                        visible: thumbMouse.containsMouse && root.interactive
+                        color: "transparent"
+                        border.width: 2
+                        border.color: N.NeoConstants.dangerRed
+                        radius: N.NeoConstants.radiusS
+                    }
+
+                    Rectangle {
+                        visible: thumbMouse.containsMouse && root.interactive
+                        anchors.top: parent.top
+                        anchors.right: parent.right
+                        anchors.topMargin: -6
+                        anchors.rightMargin: -6
+                        width: 22; height: 22
+                        radius: N.NeoConstants.radiusFull
+                        color: N.NeoConstants.dangerRed
+                        Text {
+                            anchors.centerIn: parent
+                            text: "×"
+                            font.pixelSize: 13
+                            font.weight: Font.ExtraBold
+                            color: "#FFFFFF"
+                        }
+                        MouseArea {
                             anchors.fill: parent
-                            color: "transparent"
-                            radius: 7
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: root.deleteRequested(thumbItem.frameNum)  // xoá NGAY (F1)
                         }
                     }
                 }
 
-                // Frame number label
-                Text {
-                    width: 80
-                    horizontalAlignment: Text.AlignHCenter
-                    text: thumbItem.frameNum
-                    font.pixelSize: N.NeoConstants.fontCaption
-                    font.bold: false
-                    color: thumbItem.isSelected
-                        ? N.NeoConstants.primary
-                        : N.NeoConstants.textSecondary
+                MouseArea {
+                    id: thumbMouse
+                    anchors.fill: thumbContainer
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    enabled: root.interactive
+                    onClicked: {
+                        root.selectedIndex = thumbItem.frameNum
+                        root.forceActiveFocus()
+                    }
                 }
             }
 
-            // Mouse area — click to select; hover for border
-            MouseArea {
-                id: thumbMouse
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: {
-                    root.selectedIndex = thumbItem.frameNum
-                    root.forceActiveFocus()
-                }
-            }
-        }
-    }
-
-    // ---------------------------------------------------------------------------
-    // Delete button — fixed on the right
-    // ---------------------------------------------------------------------------
-
-    Rectangle {
-        id: deleteBtn
-        width: 160
-        height: 56
-        radius: 12
-        anchors {
-            right: parent.right
-            rightMargin: N.NeoConstants.spacingM
-            verticalCenter: parent.verticalCenter
-        }
-
-        color: {
-            if (root.selectedIndex === 0) return "#9E9E9E"
-            return deleteMouse.containsMouse ? "#B71C1C" : N.NeoConstants.error
-        }
-        opacity: root.selectedIndex === 0 ? 0.35 : 1.0
-
-        Behavior on color { ColorAnimation { duration: 150 } }
-        Behavior on opacity { NumberAnimation { duration: 120 } }
-
-        Row {
-            anchors.centerIn: parent
-            spacing: 6
-            Text {
-                text: "🗑"   // U+1F5D1 wastebasket
-                font.pixelSize: N.NeoConstants.fontCaption
-                color: "#FFFFFF"
-            }
-            Text {
-                text: "XOÁ TẤM NÀY"
-                font.pixelSize: N.NeoConstants.fontCaption
-                font.bold: true
-                color: "#FFFFFF"
-            }
-        }
-
-        MouseArea {
-            id: deleteMouse
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: root.selectedIndex === 0 ? Qt.ArrowCursor : Qt.PointingHandCursor
-            enabled: root.selectedIndex > 0
-            onClicked: {
-                if (root.selectedIndex > 0) {
-                    root.deleteRequested(root.selectedIndex)
+            footer: Rectangle {
+                visible: root.interactive
+                width: 96; height: 60
+                radius: N.NeoConstants.radiusS
+                color: "transparent"
+                border.width: 2
+                border.color: N.NeoConstants.slateFaint
+                Column {
+                    anchors.centerIn: parent
+                    spacing: 0
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: "+"
+                        font.pixelSize: 18
+                        font.weight: Font.ExtraBold
+                        color: N.NeoConstants.slateMuted
+                    }
+                    Text {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: (root.framePaths.length + 1).toString()
+                        font.pixelSize: 10
+                        font.weight: Font.Bold
+                        color: N.NeoConstants.slateMuted
+                    }
                 }
             }
         }

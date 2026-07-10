@@ -5,6 +5,7 @@ from pathlib import Path
 from loguru import logger
 from PyQt6.QtCore import QObject, pyqtProperty, pyqtSignal, pyqtSlot
 
+from neo_stopmotion.config.settings import AppSettings, save_settings
 from neo_stopmotion.core.capture_engine import CaptureEngine, CaptureError
 from neo_stopmotion.services.camera_selector import CameraSelector
 from neo_stopmotion.services.export_service import ExportService
@@ -23,6 +24,13 @@ class AppController(QObject):
     cameraProbeResult = pyqtSignal(int, bool)  # (index, is_available)
     cameraChanged = pyqtSignal(int)  # new webcam_index
     pickerCounterChanged = pyqtSignal(int)  # bump to force image reload in picker
+    # T-BS30: Settings (F2/F3/F4/F8) — persisted via config.settings.save_settings
+    goalFramesChanged = pyqtSignal(int)
+    onionSkinOpacityChanged = pyqtSignal(float)
+    languageChanged = pyqtSignal(str)
+    soundEnabledChanged = pyqtSignal(bool)
+    autoUploadChanged = pyqtSignal(bool)
+    defaultFpsLevelChanged = pyqtSignal(str)
 
     def __init__(
         self,
@@ -32,6 +40,8 @@ class AppController(QObject):
         min_frames: int = 5,
         camera_selector: CameraSelector | None = None,
         library_service: LibraryService | None = None,
+        settings: AppSettings | None = None,
+        settings_path: Path | None = None,
     ) -> None:
         super().__init__()
         self._capture = capture
@@ -46,10 +56,25 @@ class AppController(QObject):
         # T-005: picker preview counter — bumped each time a probe succeeds so QML
         # refreshes image://picker/<counter> immediately.
         self._picker_counter: int = 0
-        # T-006: speed selector (default Vua / 8 fps)
-        self.speed_selector = SpeedSelector()
         # T-012: library service (injected from app.py)
         self._library_service: LibraryService | None = library_service
+
+        # T-BS30: Settings screen state (F2/F3/F4/F8) — sourced from AppSettings
+        # (loaded config.toml) so values persist across app restarts (spec §5).
+        self._settings: AppSettings = settings or AppSettings()
+        self._settings_path: Path | None = settings_path
+        self._goal_frames: int = self._settings.export.goal_frames
+        self._onion_opacity: float = self._settings.capture.onion_opacity
+        self._language: str = self._settings.app.language
+        self._sound_enabled: bool = self._settings.ui.sound_enabled
+        self._auto_upload: bool = self._settings.upload.auto_upload
+        self._default_fps_level: str = self._settings.capture.default_fps_level
+        # Apply persisted onion opacity to the active capture engine right away.
+        self._capture.onion_opacity = self._onion_opacity
+
+        # T-006: speed selector (default from Settings F8, else Vua / 8 fps)
+        self.speed_selector = SpeedSelector(default_label=self._default_fps_level)
+
         self._bus.uart_command_received.connect(self.handle_uart_command)
         self._bus.export_completed.connect(self._on_export_completed)
 
@@ -64,6 +89,157 @@ class AppController(QObject):
     def pickerCounter(self) -> int:
         """Monotonically increasing counter; QML uses it as image URL suffix."""
         return self._picker_counter
+
+    # ------------------------------------------------------------------
+    # T-BS30: Settings (F2 goalFrames / F3 onionSkinOpacity / F4 language /
+    # F8 soundEnabled+autoUpload+defaultFpsLevel) — read/write properties
+    # backed by config.toml (persist qua session, spec §5).
+    # ------------------------------------------------------------------
+
+    def _persist_settings(self) -> None:
+        if self._settings_path is None:
+            return
+        try:
+            save_settings(self._settings, self._settings_path)
+        except OSError as exc:  # pragma: no cover — disk/permission edge case
+            logger.warning(f"Could not persist settings: {exc}")
+
+    @pyqtProperty(int, notify=goalFramesChanged)
+    def goalFrames(self) -> int:
+        return self._goal_frames
+
+    @pyqtSlot(int)
+    def set_goal_frames(self, value: int) -> None:
+        """F2: đổi mục tiêu số frame — áp dụng NGAY cho phiên đang chụp dở."""
+        if value == self._goal_frames:
+            return
+        self._goal_frames = value
+        self._settings.export.goal_frames = value
+        self._persist_settings()
+        self.goalFramesChanged.emit(value)
+
+    @pyqtSlot(float)
+    def set_live_onion_opacity(self, value: float) -> None:
+        """F1/F3: áp dụng opacity NGAY cho preview đang chạy, KHÔNG persist.
+
+        Dùng cho toggle "Onion skin" ở 2a (bật/tắt hiển thị mà không đổi giá
+        trị đã lưu trong Settings — xem CapturePage.qml _applyOnionLive()).
+        Settings slider dùng set_onion_skin_opacity() (persist) thay vì slot này.
+        """
+        self._capture.onion_opacity = max(0.0, min(1.0, value))
+
+    @pyqtProperty(float, notify=onionSkinOpacityChanged)
+    def onionSkinOpacity(self) -> float:
+        return self._onion_opacity
+
+    @pyqtSlot(float)
+    def set_onion_skin_opacity(self, value: float) -> None:
+        """F3: đổi độ mờ onion skin — áp dụng NGAY cho preview đang chạy."""
+        value = max(0.0, min(1.0, value))
+        if value == self._onion_opacity:
+            return
+        self._onion_opacity = value
+        self._capture.onion_opacity = value
+        self._settings.capture.onion_opacity = value
+        self._persist_settings()
+        self.onionSkinOpacityChanged.emit(value)
+
+    @pyqtProperty(str, notify=languageChanged)
+    def language(self) -> str:
+        return self._language
+
+    @pyqtSlot(str)
+    def set_language(self, value: str) -> None:
+        """F4: đổi ngôn ngữ — 'vi+en' | 'vi' | 'en'."""
+        if value not in ("vi+en", "vi", "en") or value == self._language:
+            return
+        self._language = value
+        self._settings.app.language = value
+        self._persist_settings()
+        self.languageChanged.emit(value)
+
+    @pyqtProperty(bool, notify=soundEnabledChanged)
+    def soundEnabled(self) -> bool:
+        return self._sound_enabled
+
+    @pyqtSlot(bool)
+    def set_sound_enabled(self, value: bool) -> None:
+        """F8: bật/tắt âm 'tách' khi chụp."""
+        if value == self._sound_enabled:
+            return
+        self._sound_enabled = value
+        self._settings.ui.sound_enabled = value
+        self._persist_settings()
+        self.soundEnabledChanged.emit(value)
+
+    @pyqtProperty(bool, notify=autoUploadChanged)
+    def autoUpload(self) -> bool:
+        return self._auto_upload
+
+    @pyqtSlot(bool)
+    def set_auto_upload(self, value: bool) -> None:
+        """F8: bật/tắt tải lên cloud tự động (Q6b: ảnh hưởng luồng 2b/2c)."""
+        if value == self._auto_upload:
+            return
+        self._auto_upload = value
+        self._settings.upload.auto_upload = value
+        self._persist_settings()
+        self.autoUploadChanged.emit(value)
+
+    @pyqtProperty(str, notify=defaultFpsLevelChanged)
+    def defaultFpsLevel(self) -> str:
+        return self._default_fps_level
+
+    @pyqtSlot(str)
+    def set_default_fps_level(self, label: str) -> None:
+        """F8: tốc độ mặc định khi bắt đầu phiên mới — 'Cham'|'Vua'|'Nhanh'."""
+        if label == self._default_fps_level:
+            return
+        try:
+            self.speed_selector.set_default_label(label)
+        except ValueError as exc:
+            logger.warning(f"set_default_fps_level: {exc}")
+            return
+        self._default_fps_level = label
+        self._settings.capture.default_fps_level = label
+        self._persist_settings()
+        self.defaultFpsLevelChanged.emit(label)
+
+    @pyqtSlot(result=int)
+    def get_current_webcam_display_index(self) -> int:
+        """Convenience for SettingsPage's Camera row label (no device names available)."""
+        return self.get_current_webcam_index()
+
+    @pyqtSlot(str)
+    def retry_upload(self, mp4_path: str) -> None:
+        """F7/F8: tải lên lại file MP4 đã ghép sẵn (KHÔNG ghép lại từ frame).
+
+        Dùng cho: 2c banner "Thử tải lên lại" khi auto-upload lỗi/tắt, và
+        1g Library nút "↻ Tải lên". Kết quả trả qua SignalBus.share_url_ready
+        (share_url, qr_path) — cả hai rỗng nếu upload thất bại.
+        """
+        import threading
+
+        from neo_stopmotion.core.cloud_uploader import CloudUploader, UploadError, generate_qr
+
+        path = Path(mp4_path)
+        if not path.exists():
+            logger.warning(f"retry_upload: file not found: {path}")
+            self._bus.share_url_ready.emit("", "")
+            return
+
+        def _run() -> None:
+            try:
+                uploader = CloudUploader()
+                url = uploader.upload(path)
+                qr_path = path.parent / "qr.png"
+                generate_qr(url, qr_path)
+                self._bus.share_url_ready.emit(url, str(qr_path))
+            except UploadError as exc:
+                logger.warning(f"retry_upload failed for {path}: {exc}")
+                self._bus.share_url_ready.emit("", "")
+
+        threading.Thread(target=_run, daemon=True).start()
 
     @pyqtSlot(str)
     def handle_uart_command(self, cmd: str) -> None:
