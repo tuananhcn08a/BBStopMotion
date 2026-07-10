@@ -1,0 +1,8 @@
+{
+  "_comment": "Landmarks pixel-scan khớp với fixtures/self-test.html (dùng để smoke-test platform=qml|ios của gate.mjs, KHÔNG phải AC bắt buộc — AC1/AC2 dùng platform=web).",
+  "capture-btn": {
+    "searchBox": { "x": 140, "y": 20, "w": 200, "h": 160 },
+    "color": "#FF6B35",
+    "tolerance": 12
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "_comment": "Ví dụ file landmarks cho platform qml|ios (pixel-scan). Mỗi landmark: searchBox (vùng tìm sơ bộ, px thật của ảnh chụp) + color mục tiêu (hex) + tolerance (dung sai mỗi kênh RGB, mặc định 24 nếu bỏ qua). Đo thật: điền toạ độ theo redline của T-BS01/T-BS02 cho từng màn — đây chỉ minh hoạ định dạng, KHÔNG phải giá trị chốt.",
+  "capture-btn": {
+    "searchBox": { "x": 520, "y": 520, "w": 160, "h": 160 },
+    "color": "#FF6B35",
+    "tolerance": 20
+  },
+  "sidebar": {
+    "searchBox": { "x": 0, "y": 0, "w": 300, "h": 820 },
+    "color": "#FFFFFF",
+    "tolerance": 10
+  }
+}

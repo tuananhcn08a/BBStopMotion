@@ -12,7 +12,9 @@
     "test": "vitest run",
     "e2e": "node e2e/export.test.mjs",
     "e2e:camera": "node e2e/camera.test.mjs",
-    "e2e:all": "node e2e/export.test.mjs && node e2e/camera.test.mjs"
+    "e2e:all": "node e2e/export.test.mjs && node e2e/camera.test.mjs",
+    "verify": "node verify/gate.mjs",
+    "verify:selftest": "node verify/gate.mjs --screen selftest --platform web --mockup verify/fixtures/self-test.html --app-url verify/fixtures/self-test.html --out-dir verify/.out/selftest-pass && node verify/gate.mjs --screen selftest-fail --platform web --mockup verify/fixtures/self-test.html --app-url verify/fixtures/self-test-fail.html --out-dir verify/.out/selftest-fail --expect-fail"
   },
   "dependencies": {
     "@ffmpeg/core": "0.12.6",
@@ -36,6 +38,7 @@
     "eslint-plugin-react-refresh": "^0.4.14",
     "globals": "^15.11.0",
     "jsdom": "^25.0.1",
+    "pngjs": "^7.0.0",
     "puppeteer-core": "^25.2.1",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.11.0",

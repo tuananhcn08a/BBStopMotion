@@ -4,6 +4,7 @@ dist
 .env.local
 .env.*.local
 e2e/screenshots/
+verify/.out/
 # ffmpeg-core binaries — copy tự động khi npm install (xem scripts/copy-ffmpeg.mjs)
 public/ffmpeg/ffmpeg-core.wasm
 public/ffmpeg/ffmpeg-core.js

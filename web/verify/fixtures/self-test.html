@@ -1,0 +1,30 @@
+<!doctype html>
+<!--
+  verify/fixtures/self-test.html — mockup TỐI GIẢN tự tạo để self-test AC1/AC2 của
+  T-BS03 khi mockup chuẩn T-BS02 chưa có. KHÔNG phải mockup sản phẩm thật.
+
+  Quy ước: mọi phần tử cần đo mang `data-landmark="<ten>"` — measure.mjs đọc
+  getBoundingClientRect()/getComputedStyle() của các phần tử này.
+-->
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <title>Self-test fixture — T-BS03</title>
+    <style>
+      html, body { margin: 0; padding: 0; }
+      body { font-family: system-ui, sans-serif; background: #f3f6fb; }
+      #app-root { padding: 24px; display: flex; gap: 16px; }
+      #sidebar { width: 120px; height: 250px; background: #ffffff; border-radius: 16px; }
+      #main { width: 260px; height: 250px; background: #e9f1fe; border-radius: 16px; padding: 20px; box-sizing: border-box; }
+      #capture-btn { width: 60px; height: 60px; border-radius: 50%; background: #ff6b35; margin-top: 20px; }
+    </style>
+  </head>
+  <body>
+    <div id="app-root" data-landmark="app-root">
+      <div id="sidebar" data-landmark="sidebar"></div>
+      <div id="main" data-landmark="main">
+        <div id="capture-btn" data-landmark="capture-btn"></div>
+      </div>
+    </div>
+  </body>
+</html>
