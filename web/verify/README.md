@@ -90,6 +90,38 @@ Kết quả: `verify/.out/2a-web/{report.md, overlay.png, mockup.png, app.png}` 
    # repo BBStopMotion-apple mặc định: sibling của neo-stopmotion (../bbstopmotion-apple)
    # đổi bằng --repo <path> hoặc IOS_APP_REPO_ROOT=<path>
    ```
+
+   ⚠️ **Gotcha stale bundle/process (T-BS37)** — round-1 gate iPhone từng báo nhầm 2 finding vì
+   chụp trúng `.app` bundle/process **CŨ**. Nguyên nhân: `xcrun simctl launch` trên một process
+   **đang chạy sẵn** trên sim là **no-op** đối với launch-arg mới — process cũ vẫn giữ nguyên args
+   từ lần khởi động trước (vd còn kẹt ở `-VerifyScreen capture` dù bạn vừa đổi sang `library`),
+   KHÔNG tự restart để nhận args mới, kể cả khi bạn vừa build+install bản mới đè lên. Vì vậy
+   `grab-ios.sh` LUÔN, ở mỗi lần chạy (mỗi lần đổi màn cần chụp):
+   1. `xcodebuild build` bản mới nhất (không skip, không cache).
+   2. `xcrun simctl terminate` process cũ (nếu đang chạy).
+   3. `xcrun simctl install` bản vừa build **đè lên** (upgrade in-place — xem gotcha #2 vì sao
+      KHÔNG `uninstall` trước).
+   4. `xcrun simctl launch ... ${LAUNCH_ARGS[@]}` — process khởi động MỚI hoàn toàn nên launch-arg
+      luôn được áp dụng.
+
+   Hệ quả cho người gọi script: **gọi `grab-ios.sh` riêng cho MỖI màn cần chụp** (vd một lần
+   `--launch-arg "-VerifyScreen capture"`, một lần khác `--launch-arg "-VerifyScreen library"`) —
+   KHÔNG launch app 1 lần rồi tự điều hướng thủ công rồi chụp nhiều lần, vì mỗi lời gọi script đã
+   tự đảm bảo process sạch cho đúng args truyền vào lần đó.
+
+   ⚠️ **Gotcha #2 — cố ý KHÔNG `simctl uninstall` trước khi install lại:** thử `uninstall` +
+   `install` (thay vì chỉ `install` đè) trong lúc làm T-BS37 cho thấy tác dụng phụ: `uninstall` xoá
+   luôn data container + quyền hệ thống (Camera...) đã cấp cho app trên sim này — lần launch kế
+   tiếp iOS bật lại hộp thoại hệ thống "would like to access the Camera", hộp thoại này **che kín**
+   màn app phía dưới nên 2 ảnh chụp liên tiếp (`capture` vs `library`) trông **giống hệt nhau** dù
+   `-VerifyScreen` đã áp đúng bên dưới — trông giống hệt bug stale-bundle ban đầu nhưng nguyên nhân
+   khác hẳn. Xcode ở máy dev hiện tại **không hỗ trợ** `xcrun simctl privacy grant camera` (không
+   nằm trong danh sách service của `simctl privacy --help`) nên không thể auto-grant lại quyền sau
+   uninstall. Do đó script chỉ `install` đè (**upgrade in-place**, không uninstall trước): binary/code
+   luôn là bản mới nhất, nhưng data container + quyền Camera đã Allow thủ công 1 lần từ trước trên
+   sim này được **giữ nguyên** qua các lần chạy script sau — hộp thoại quyền không che ảnh nữa.
+   ⇒ Trên máy mới/sim mới chưa từng Allow Camera, cần **bấm Allow thủ công một lần** trước khi dùng
+   `grab-ios.sh` cho các màn cần camera; các lần sau không cần lặp lại.
 2. So với mockup khung 390×844:
    ```bash
    cd web
@@ -153,10 +185,11 @@ verify/
   `tolerance` khai đúng; nếu 2 phần tử liền kề cùng màu trong searchBox, bounding box đo được có thể
   bao trùm cả 2 (lem biên). Luôn khai `searchBox` sát vùng thật + `tolerance` nhỏ nhất đủ dùng.
   Không đo được font/chữ qua ảnh — chỉ đo được hình khối theo màu.
-- **`grab-ios.sh`** hiện chỉ launch app rồi chờ `--wait-seconds` rồi chụp màn HIỆN TẠI — CHƯA điều
-  hướng tới đúng màn con (vd "Capture" vs "Library") vì BBStopMotion-apple (T-A03) mới ở mức scaffold,
-  chưa có deep-link/launch-argument. `--launch-arg` đã có sẵn để truyền cờ khi app hỗ trợ điều hướng
-  (T-BS20 sẽ bổ sung).
+- **`grab-ios.sh`** build+terminate+uninstall+install+launch **lại từ đầu ở mỗi lần gọi** (xem gotcha
+  T-BS37 phía trên) rồi chờ `--wait-seconds` rồi chụp màn HIỆN TẠI. Điều hướng tới đúng màn con dùng
+  `--launch-arg "-VerifyScreen <capture|library|...>"` — app đã hỗ trợ (T-BS20,
+  `iOS/Support/VerifySeediOS.swift`). Gọi script riêng cho mỗi màn cần chụp, KHÔNG launch 1 lần rồi
+  chụp nhiều màn từ cùng 1 process.
 - **`grab-qml.sh`** dùng `NEO_STOPMOTION_GRAB` sẵn có trong `app.py` — `grabWindow()` chụp đúng
   frame hiện tại lúc timer bắn (mặc định delay 3500ms cho qua splash); nếu app cần thao tác điều
   hướng trước khi tới đúng màn (vd bấm "Xuất phim"), script hiện CHƯA tự động hoá thao tác đó —

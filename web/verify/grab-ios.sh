@@ -11,11 +11,15 @@
 #   - Nếu sau này thêm `xcodebuild test` (vd để điều hướng màn qua XCUITest),
 #     PHẢI thêm `-parallel-testing-enabled NO` (tránh spawn "Clone N of ...").
 #
-# Giới hạn hiện tại: BBStopMotion-apple (T-A03) mới ở mức scaffold — script
-# build+install+launch app rồi chụp màn HIỆN TẠI sau --wait-seconds. Điều hướng
-# tới đúng màn cụ thể (vd "màn Capture") cần app hỗ trợ deep-link hoặc
-# launch argument (`--verify-screen <id>`) — TODO khi apple-dev thêm màn thật
-# (T-BS20). Cho tới đó, dùng --launch-arg để tự truyền nếu app đã hỗ trợ.
+# Điều hướng tới đúng màn: app đã hỗ trợ launch-arg `-VerifyScreen <id>` (T-BS20,
+# xem bbstopmotion-apple/iOS/Support/VerifySeediOS.swift) — dùng --launch-arg.
+#
+# ⚠️ GOTCHA (T-BS37): `simctl launch` trên process ĐANG CHẠY SẴN là NO-OP đối với
+# launch-arg mới (process cũ giữ nguyên args từ lần khởi động trước → chụp trúng
+# màn CŨ dù build/launch-arg đã đổi — round-1 gate iPhone từng báo nhầm finding vì
+# lý do này). Vì vậy script này LUÔN, ở MỌI lần chạy: rebuild bản mới → terminate +
+# uninstall process/bundle cũ → install bản mới → launch fresh với launch-arg. Gọi
+# script riêng cho MỖI màn cần chụp (không launch 1 lần rồi chụp nhiều màn).
 #
 # Usage:
 #   verify/grab-ios.sh --out <shot.png> \
@@ -43,7 +47,20 @@ while [[ $# -gt 0 ]]; do
     --repo) IOS_REPO="$2"; shift 2 ;;
     --scheme) SCHEME="$2"; shift 2 ;;
     --wait-seconds) WAIT_SECONDS="$2"; shift 2 ;;
-    --launch-arg) LAUNCH_ARGS+=("$2"); shift 2 ;;
+    --launch-arg)
+      # ⚠️ GOTCHA (T-BS37, bug #2 phát hiện khi verify AC1): người gọi truyền
+      # --launch-arg "-VerifyScreen library" như 1 CHUỖI (tiện gõ, đúng README/
+      # comment VerifySeediOS.swift) nhưng `simctl launch` cần forward dạng
+      # NHIỀU argv token RIÊNG (`-VerifyScreen`, `library`) — Foundation chỉ nạp
+      # được vào `NSArgumentDomain` khi `-Key` và `value` là 2 argv token tách
+      # biệt. Nếu gộp thành 1 token (vd do "${LAUNCH_ARGS[@]}" giữ nguyên chuỗi
+      # có khoảng trắng), `UserDefaults.standard.string(forKey: "VerifyScreen")`
+      # trả về nil → app im lặng KHÔNG điều hướng, luôn hiện màn mặc định
+      # (capture) — trông giống hệt bug "dính màn cũ" dù process đã restart
+      # sạch. Tách theo khoảng trắng ở đây để mỗi từ thành 1 argv token riêng.
+      IFS=' ' read -ra _launch_arg_tokens <<< "$2"
+      LAUNCH_ARGS+=("${_launch_arg_tokens[@]}")
+      shift 2 ;;
     -h|--help)
       echo "Usage: grab-ios.sh --out <shot.png> [--repo <path>] [--scheme NAME] [--wait-seconds N] [--launch-arg ARG]"
       exit 0
@@ -108,8 +125,28 @@ APP_PATH="${TARGET_BUILD_DIR}/${WRAPPER_NAME}"
 BUNDLE_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "${APP_PATH}/Info.plist")"
 echo "[grab-ios] app=${APP_PATH} bundle_id=${BUNDLE_ID}"
 
-# --- 4. Install + launch app THẬT trên sim ---
+# --- 4. Terminate process CŨ, install bản MỚI đè lên, rồi launch fresh ---
+# ⚠️ GOTCHA (T-BS37): nếu app đang chạy sẵn trên sim, `simctl launch` trên process
+# LIVE là NO-OP đối với launch-arg mới — process cũ vẫn giữ nguyên args lúc nó khởi
+# động lần trước (vd còn kẹt ở -VerifyScreen cũ), KHÔNG restart để nhận args mới.
+# Round-1 gate iPhone từng báo nhầm 2 finding vì lý do này (chụp trúng bundle/process
+# CŨ). Vì vậy LUÔN terminate (dừng process đang chạy, nếu có) TRƯỚC KHI install bản
+# vừa build đè lên (upgrade in-place) rồi launch lại — đảm bảo mỗi lần đổi
+# --launch-arg process được restart sạch với binary MỚI NHẤT, không bao giờ no-op.
+#
+# Cố ý KHÔNG dùng `simctl uninstall` trước install: uninstall xoá luôn data
+# container + quyền hệ thống (Camera...) đã cấp cho app trên sim này — nếu xoá,
+# lần launch kế tiếp iOS bật lại hộp thoại xin quyền Camera hệ thống, hộp thoại
+# này CHE HẾT màn app phía dưới nên ảnh chụp không còn phản ánh đúng
+# -VerifyScreen nữa (tự phát hiện khi verify AC1 harness này — xem README).
+# `install` (không uninstall trước) là **upgrade in-place**: ghi đè binary/code
+# mới nhưng giữ nguyên data container + quyền đã cấp trước đó cho sim này, đúng
+# yêu cầu "luôn chạy bản mới" mà không phá quyền Camera đã được người dùng Allow
+# (thủ công 1 lần) từ trước.
+echo "[grab-ios] terminate process cũ (nếu có) rồi install đè bản mới..."
+xcrun simctl terminate "${UDID}" "${BUNDLE_ID}" >/dev/null 2>&1 || true
 xcrun simctl install "${UDID}" "${APP_PATH}"
+
 # Lưu ý: macOS /bin/bash mặc định là 3.2 — "${arr[@]}" trên mảng RỖNG dưới
 # `set -u` báo "unbound variable". Dùng idiom ${arr[@]+"${arr[@]}"} để an toàn.
 xcrun simctl launch "${UDID}" "${BUNDLE_ID}" ${LAUNCH_ARGS[@]+"${LAUNCH_ARGS[@]}"} >/dev/null
