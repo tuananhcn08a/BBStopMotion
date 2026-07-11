@@ -6,7 +6,6 @@
 
 html, body, #root {
   height: 100%;
-  overflow: hidden;
 }
 
 body {
@@ -14,6 +13,10 @@ body {
   background: var(--color-bg-base);
   color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
+  /* T-BS60 — bỏ overflow:hidden toàn cục (khoá cuộn, chặn hẳn mobile). Desktop vẫn không có
+     scrollbar vì mọi màn khớp đúng min-height:100vh/dvh; overflow-x:hidden giữ không tràn ngang. */
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 button {

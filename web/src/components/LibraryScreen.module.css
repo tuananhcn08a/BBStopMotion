@@ -215,3 +215,24 @@
   font-weight: var(--typ-weight-medium);
   padding: 40px 0;
 }
+
+/* T-BS60 — mobile: .row (thumb + info + badge + 2 nút white-space:nowrap) không wrap sẽ tràn
+   ngang trên điện thoại. Cho wrap xuống dòng 2 thay vì ép vừa 1 hàng như desktop. */
+@media (max-width: 720px) {
+  .topRow {
+    flex-wrap: wrap;
+  }
+
+  .row {
+    flex-wrap: wrap;
+  }
+
+  .thumb {
+    width: 72px;
+    height: 45px;
+  }
+
+  .info {
+    flex: 1 1 140px;
+  }
+}
