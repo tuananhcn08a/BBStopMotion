@@ -50,3 +50,14 @@
 .active .key {
   color: var(--color-text-on-tint-active);
 }
+
+/* T-BS64 — mobile: bỏ "· phím N" (vô nghĩa trên cảm ứng), 3 nút chia đều full-width để đạt
+   hit-target-min 44px. */
+@media (max-width: 720px) {
+  .keyDesktop { display: none; }
+
+  .segBtn {
+    flex: 1;
+    min-height: 44px;
+  }
+}

@@ -25,6 +25,10 @@
   color: var(--color-text-disabled);
 }
 
+.hintMobile {
+  display: none;
+}
+
 .filmstrip {
   display: flex;
   gap: 8px;
@@ -132,4 +136,24 @@
 .emptyNum {
   font-size: 10px;
   font-weight: 700;
+}
+
+/* T-BS64 — mobile: nút xoá phụ thuộc :hover/:focus-within không bao giờ hiện được trên cảm ứng
+   (bug thật, không chỉ câu chữ). Bỏ phụ thuộc hover, luôn hiện; tăng nhẹ kích thước cho dễ chạm
+   hơn trong khung thumb 96×60 nhỏ (không đạt 44px lý tưởng vì sẽ đè lên ảnh). */
+@media (max-width: 720px) {
+  .hintDesktop { display: none; }
+  .hintMobile { display: inline; }
+
+  .deleteBtn,
+  .thumbOutline {
+    display: flex;
+  }
+
+  .deleteBtn {
+    width: 26px;
+    height: 26px;
+    top: -8px;
+    right: -8px;
+  }
 }

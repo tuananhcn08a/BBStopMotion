@@ -37,6 +37,10 @@ export const STRINGS = {
   'frame.counter': { vi: 'FRAME', en: 'FRAME' },
   'hint.capture': { vi: 'Bấm', en: 'Press' },
   'hint.captureSuffix': { vi: 'hoặc nút xanh IO1 🟢 để chụp', en: 'or the green IO1 button 🟢 to capture' },
+  // T-BS64 — bản mobile của hint chụp: ngôn ngữ chạm, không kbd chip (bấm phím vô nghĩa trên cảm ứng).
+  'hint.captureMobile': { vi: 'Chạm 📷 để chụp frame đầu tiên!', en: 'Tap 📷 to capture your first frame!' },
+  'hint.captureMobileNext': { vi: 'Chạm 📷 để chụp tiếp', en: 'Tap 📷 to keep capturing' },
+  'camera.flip': { vi: 'Đổi camera trước/sau', en: 'Switch camera' },
   'speed.label': { vi: 'TỐC ĐỘ', en: 'SPEED' },
   'speed.slow': { vi: 'Chậm', en: 'Slow' },
   'speed.normal': { vi: 'Thường', en: 'Normal' },
@@ -53,6 +57,9 @@ export const STRINGS = {
     vi: 'Rê chuột lên frame để xem lại hoặc xoá frame bất kỳ',
     en: 'Hover a frame to preview or delete it',
   },
+  // T-BS64 — copy mobile đúng sự thật (chỉ xoá được, KHÔNG có tính năng "xem lại" khi chạm/hover
+  // 1 frame — Coordinator đã chốt không hứa hẹn tính năng chưa tồn tại).
+  'filmstrip.hintMobile': { vi: 'Chạm × để xoá frame', en: 'Tap × to delete a frame' },
   'export.title': { vi: 'Đang ghép phim của con...', en: 'Creating your movie...' },
   'export.stageMp4': { vi: 'Ghép MP4', en: 'Compose MP4' },
   'export.stageGif': { vi: 'Tạo GIF', en: 'Create GIF' },

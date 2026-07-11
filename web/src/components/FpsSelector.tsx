@@ -22,7 +22,10 @@ export default function FpsSelector({ value, onChange }: Props) {
             aria-label={`${FPS_LABELS[level]} — phím ${idx + 1}`}
           >
             <span>{FPS_ICONS[level]} {FPS_LABELS[level]}</span>
-            <span className={styles.key}>{FPS_VALUES[level]} fps · phím {idx + 1}</span>
+            <span className={styles.key}>
+              {FPS_VALUES[level]} fps
+              <span className={styles.keyDesktop}> · phím {idx + 1}</span>
+            </span>
           </button>
         ))}
       </div>

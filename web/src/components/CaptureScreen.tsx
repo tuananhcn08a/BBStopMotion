@@ -344,6 +344,24 @@ export default function CaptureScreen({
 
         {isFlashing && <div className={styles.flash} aria-hidden="true" data-testid="capture-flash" />}
 
+        {/* T-BS64 — nút lật camera trước/sau, mọi breakpoint (máy nhiều webcam cần cả desktop),
+            cycle vòng tròn qua switchCamera đã có sẵn trong useCamera. */}
+        {cameraLive && devices.length > 1 && (
+          <button
+            type="button"
+            className={styles.flipCameraBtn}
+            onClick={() => {
+              const idx = devices.findIndex(d => d.deviceId === activeDeviceId)
+              const next = devices[(idx + 1) % devices.length]
+              if (next) void switchCamera(next.deviceId)
+            }}
+            aria-label={label(language, 'camera.flip').main}
+            data-testid="flip-camera-btn"
+          >
+            🔄
+          </button>
+        )}
+
         <div className={styles.frameCounter} data-landmark="frame-counter">
           <div className={styles.frameNum}>{frames.length}</div>
           <div className={styles.frameLabel}>{label(language, 'frame.counter').main} · ≈ {estimatedSeconds}s</div>
@@ -360,17 +378,29 @@ export default function CaptureScreen({
 
         {cameraLive && !isPreviewMode && (
           <div className={styles.previewHint}>
-            {frames.length === 0
-              ? 'Bấm Space để chụp frame đầu tiên!'
-              : <>{hintPrefix.main} <kbd>Space</kbd> {hintSuffix.main}</>
-            }
+            <span className={styles.hintDesktop}>
+              {frames.length === 0
+                ? 'Bấm Space để chụp frame đầu tiên!'
+                : <>{hintPrefix.main} <kbd>Space</kbd> {hintSuffix.main}</>
+              }
+            </span>
+            <span className={styles.hintMobile}>
+              {frames.length === 0
+                ? label(language, 'hint.captureMobile').main
+                : label(language, 'hint.captureMobileNext').main
+              }
+            </span>
           </div>
         )}
       </div>
 
       {/* Controls row */}
       <div className={styles.controlsRow}>
-        <FpsSelector value={fpsLevel} onChange={setFpsLevel} />
+        {/* T-BS64 — wrapper riêng để gán CSS `order` trên mobile (order cần áp lên chính flex
+            item của .controlsRow, không xuyên qua module CSS của FpsSelector được). */}
+        <div className={styles.speedWrap}>
+          <FpsSelector value={fpsLevel} onChange={setFpsLevel} />
+        </div>
 
         <div className={styles.captureWrap}>
           <button

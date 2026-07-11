@@ -22,7 +22,10 @@ export default function Filmstrip({ frames, selectedIndex, language, onDeleteFra
           {title.main}
           {title.sub ? ` · ${title.sub}` : ''}
         </span>
-        <span className={styles.hint}>{hint.main}</span>
+        <span className={styles.hint}>
+          <span className={styles.hintDesktop}>{hint.main}</span>
+          <span className={styles.hintMobile}>{label(language, 'filmstrip.hintMobile').main}</span>
+        </span>
       </div>
       <div
         className={styles.filmstrip}

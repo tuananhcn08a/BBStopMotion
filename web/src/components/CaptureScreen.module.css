@@ -264,6 +264,34 @@
   font-size: 12px;
 }
 
+.hintMobile {
+  display: none;
+}
+
+/* T-BS64 — nút lật camera trước/sau, đáy khung preview, không đụng frameCounter (top-right)
+   hay previewHint (bottom-center). Mọi breakpoint (máy nhiều webcam cần cả desktop). */
+.flipCameraBtn {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: var(--color-bg-preview-overlay);
+  color: #fff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform var(--motion-fast);
+}
+
+.flipCameraBtn:active {
+  transform: scale(0.92);
+}
+
 .flash {
   position: absolute;
   inset: 0;
@@ -465,14 +493,45 @@
 
 /* T-BS60 — mobile: controlsRow (FpsSelector + nút chụp + actionCol 250px) nằm ngang 1 hàng sẽ
    rộng hơn viewport điện thoại. Cho phép wrap + actionCol full width để nút Xuất luôn bấm tới.
-   stepRow (3 chip StepIndicator + spacer + onionToggle) cũng cần wrap vì cùng lý do. */
+   stepRow (3 chip StepIndicator + spacer + onionToggle) cũng cần wrap vì cùng lý do.
+   T-BS64 — đổi sang cột dọc + `order` để đúng thứ tự redline: chụp → tốc độ → action (không
+   khớp thứ tự DOM hiện tại là tốc độ → chụp → action), bỏ hint bàn phím/chuột/ThingBot,
+   thêm nút lật camera đã style riêng ở trên. */
 @media (max-width: 720px) {
+  .hintDesktop { display: none; }
+  .hintMobile { display: inline; }
+
   .controlsRow {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 14px;
+  }
+
+  .speedWrap {
+    order: 1;
+    width: 100%;
+  }
+
+  .captureWrap {
+    order: 0;
   }
 
   .actionCol {
+    order: 2;
     width: 100%;
+  }
+
+  .capKeys {
+    display: none;
+  }
+
+  .actionRight {
+    display: none;
+  }
+
+  .actionBtn {
+    min-height: 44px;
   }
 
   .stepRow {

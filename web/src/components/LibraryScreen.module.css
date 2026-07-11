@@ -235,4 +235,15 @@
   .info {
     flex: 1 1 140px;
   }
+
+  /* T-BS64 — nút xoá phim phụ thuộc :hover/:focus-within không bao giờ hiện được trên cảm ứng
+     (bug thật, giống Filmstrip). Thoát khỏi absolute + luôn hiện, xếp vào cuối hàng như 1 nút
+     bình thường thay vì đè lên nội dung. */
+  .deleteBtn {
+    display: flex;
+    position: static;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+  }
 }
