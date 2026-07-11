@@ -134,6 +134,44 @@ Kết quả: `verify/.out/2a-web/{report.md, overlay.png, mockup.png, app.png}` 
      --out-dir verify/.out/1i-ios
    ```
 
+## Cách chạy — nền macOS
+
+macOS chạy **trực tiếp trên máy** (không phải simulator — macOS không có "virtual device" như iOS,
+virtual device policy không áp dụng ở đây). Máy build/QA gate không có camera thật → app đã hỗ trợ
+launch-arg `-VerifyScreen <capture|library|settings|success|export>` tương tự iOS (T-BS55,
+`bbstopmotion-apple/macOS/Support/VerifySeedMac.swift`) để mở khoá Export/Success mà không cần camera.
+
+1. Chụp cửa sổ app THẬT:
+   ```bash
+   cd neo-stopmotion
+   web/verify/grab-macos.sh --out /tmp/macos-export.png --launch-arg "-VerifyScreen export"
+   # repo bbstopmotion-apple mặc định: sibling của neo-stopmotion (../bbstopmotion-apple)
+   # đổi bằng --repo <path> hoặc MACOS_APP_REPO_ROOT=<path>
+   ```
+
+   ⚠️ **Cần quyền "Screen Recording"** cho app chạy shell này (Terminal/iTerm...) trong
+   System Settings > Privacy & Security > Screen Recording — thiếu quyền này `screencapture` vẫn
+   thoát mã 0 (không lỗi) nhưng trả về **ảnh đen tuyền**. Cấp quyền là thao tác người dùng bấm 1 lần,
+   script không tự cấp được. Màn hình bị khoá (lock screen) cho ra ảnh đen giống hệt — kiểm tra
+   bằng `python3 -c "import Quartz; print(Quartz.CGSessionCopyCurrentDictionary())"`, tìm key
+   `CGSSessionScreenIsLocked`.
+
+   Cùng gotcha stale-process như `grab-ios.sh` (T-BS37): `open` trên app **đang chạy sẵn** không áp
+   launch-arg mới — script LUÔN `pkill` process cũ trước khi build + launch lại, gọi riêng cho mỗi
+   màn cần chụp.
+
+2. So với mockup khung macOS (kích thước cửa sổ tối thiểu `900×600`, xem `RootShellMac.swift`):
+   ```bash
+   cd web
+   node verify/gate.mjs \
+     --screen export --platform macos \
+     --mockup <mockup macOS export> --mockup-viewport 900x600 \
+     --app-image /tmp/macos-export.png \
+     --landmarks <landmarks-export-macos.json> \
+     --threshold 4 \
+     --out-dir verify/.out/export-macos
+   ```
+
 ## Self-test (chứng minh harness hoạt động đúng — AC1/AC2 của T-BS03)
 
 Mockup T-BS02 (11 màn chuẩn) chưa có ở thời điểm dựng harness này → dùng fixture tối giản tự tạo
@@ -164,6 +202,7 @@ verify/
 ├── gate.mjs                   # orchestrator: --screen --platform --app-url|--app-image --mockup
 ├── grab-qml.sh                # chụp cửa sổ app desktop (PyQt6/QML) thật
 ├── grab-ios.sh                # build+install+chụp màn iPhone 17 sim (UDID cố định)
+├── grab-macos.sh               # build+launch+chụp cửa sổ macOS thật (chạy trực tiếp, không sim)
 ├── lib/
 │   ├── chrome.mjs              # resolve Chrome/Chromium thật cho puppeteer-core
 │   ├── args.mjs                 # parser --flag value tối giản
@@ -194,6 +233,11 @@ verify/
   frame hiện tại lúc timer bắn (mặc định delay 3500ms cho qua splash); nếu app cần thao tác điều
   hướng trước khi tới đúng màn (vd bấm "Xuất phim"), script hiện CHƯA tự động hoá thao tác đó —
   cần chạy app ở đúng state trước hoặc mở rộng bằng `NEO_STOPMOTION_AUTOSHOOT`/`AUTOEXPORT`.
+- **`grab-macos.sh`** build+kill process cũ+launch **lại từ đầu ở mỗi lần gọi** (cùng gotcha
+  stale-process như `grab-ios.sh`, T-BS55) rồi chờ `--wait-seconds` rồi chụp cửa sổ app qua
+  `screencapture -l<windowID>` (tìm window id bằng Quartz, không cần quyền Accessibility). Cần
+  quyền Screen Recording đã cấp cho app chạy shell + màn hình không bị khoá, nếu không
+  `screencapture` trả ảnh đen mà không báo lỗi (xem gotcha trong phần "Cách chạy — nền macOS").
 - **Overlay resize** dùng nearest-neighbor tự viết (không dùng `sharp`/canvas, giữ dependency tối
   giản) — đủ để soi lệch bằng mắt, không dùng để đo màu chính xác trên overlay.
 - Web self-test dùng Chrome cài sẵn qua `puppeteer-core` (không tải Chromium riêng) — path mặc định
