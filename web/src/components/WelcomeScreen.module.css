@@ -13,14 +13,78 @@
   padding: 40px 20px;
 }
 
-/* T-BS60 — mobile: nội dung Welcome (logo+title+3 card+CTA) thường cao hơn viewport ngắn của
-   điện thoại. justify-content:center dồn phần trên (kể cả nút CTA) lên trên màn hình khi
-   overflow, nên bỏ center + cho phép cuộn dọc để CTA luôn bấm tới được. */
+/* T-BS60/T-BS66 — mobile: thu gọn toàn bộ (logo/title/card/CTA) để vừa 1 viewport, thấy nút
+   "Bắt đầu" ngay không cần cuộn. Vẫn giữ overflow-y:auto làm lưới an toàn cho màn rất thấp/zoom
+   lớn (T-BS60), nhưng mục tiêu bây giờ là KHÔNG cần cuộn ở viewport chuẩn (390×844). */
 @media (max-width: 720px) {
   .screen {
     justify-content: flex-start;
     overflow-y: auto;
-    padding: 32px 20px 40px;
+    padding: 20px 16px 24px;
+    gap: 14px;
+  }
+
+  /* T-BS66 — icon trang trí (🎬⭐🎞️🤖) định vị theo px cố định từ mép .screen; khi nội dung
+     dồn lên đầu màn (justify-content:flex-start) chúng đè lên logo/wordmark và mép nút Start.
+     Thuần trang trí, ẩn trên mobile không mất thông tin. */
+  .deco {
+    display: none;
+  }
+
+  .logoIcon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    font-size: 15px;
+  }
+
+  .wordmark {
+    font-size: 20px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .sub {
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  .cards {
+    gap: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .card {
+    width: auto;
+    flex: 1;
+    padding: 12px 8px;
+  }
+
+  .cardIcon {
+    font-size: 24px;
+  }
+
+  .cardTitle {
+    font-size: 12px;
+    margin-top: 6px;
+  }
+
+  .cardDesc {
+    font-size: 11px;
+    margin-top: 3px;
+  }
+
+  .cta {
+    padding: 16px 40px;
+    font-size: 18px;
+  }
+
+  /* T-BS66 — hint "bấm nút xanh trên bàn" chỉ dành cho ThingBot phần cứng, không áp dụng khi
+     dùng web trên điện thoại. */
+  .ctaHint {
+    display: none;
   }
 }
 

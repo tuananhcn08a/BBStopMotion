@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import QRCode from 'qrcode'
 import { ExportResult, Language } from '../types'
 import { label, bilingualText } from '../i18n'
@@ -43,6 +43,8 @@ function formatExpiryDate(iso: string): string {
 export default function SuccessScreen({ result, onNewFilm, language, frameCount, durationSeconds, autoUpload }: Props) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
+  const videoElRef = useRef<HTMLVideoElement | null>(null)
+  const [isPlaying, setIsPlaying] = useState(false)
 
   // Manual upload state (F8 autoUpload=false, or retry after autoUpload failure)
   const [manualUploadUrl, setManualUploadUrl] = useState<string | undefined>(result.uploadUrl)
@@ -66,12 +68,45 @@ export default function SuccessScreen({ result, onNewFilm, language, frameCount,
     }
   }, [manualUploadUrl])
 
-  const handleDownload = () => {
+  // T-BS66 — bấm nút play trên khung video không phát vì trước đây chưa hề gắn onClick.
+  // Toggle play/pause qua ref tới thẻ <video> thật (blob URL, playsInline sẵn có cho iOS).
+  const handleTogglePlay = () => {
+    const el = videoElRef.current
+    if (!el) return
+    if (el.paused || el.ended) {
+      void el.play()
+    } else {
+      el.pause()
+    }
+  }
+
+  // T-BS66 — trên iOS Safari, `<a download>` với blob URL bị bỏ qua (mở/điều hướng blob như
+  // trang HTML thay vì tải file). Dùng Web Share API (`navigator.share({ files })`) khi trình
+  // duyệt hỗ trợ — share sheet iOS cho phép "Lưu vào Files/Ảnh", đúng ý PO "chọn nơi lưu tuỳ ý".
+  // Desktop / trình duyệt không hỗ trợ share file → fallback `<a download>` như cũ.
+  const handleDownload = async () => {
     if (!downloadUrl) return
+
+    if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare) {
+      try {
+        const file = new File([result.blob], result.filename, { type: result.blob.type || 'video/mp4' })
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: result.filename })
+          return
+        }
+      } catch (err) {
+        // Bé bấm huỷ share sheet — không phải lỗi, không cần fallback.
+        if (err instanceof Error && err.name === 'AbortError') return
+        // Lỗi share khác (hiếm) → rơi xuống tải trực tiếp bên dưới.
+      }
+    }
+
     const a = document.createElement('a')
     a.href = downloadUrl
     a.download = result.filename
+    document.body.appendChild(a)
     a.click()
+    a.remove()
   }
 
   const handleUploadNow = async () => {
@@ -113,9 +148,31 @@ export default function SuccessScreen({ result, onNewFilm, language, frameCount,
           <div className={styles.cardsRow}>
             <div className={styles.videoCard} data-landmark="video-player">
               {downloadUrl && (
-                <video src={downloadUrl} className={styles.videoEl} muted loop playsInline aria-label="Xem lại phim đã ghép" />
+                <video
+                  ref={videoElRef}
+                  src={downloadUrl}
+                  className={styles.videoEl}
+                  muted
+                  loop
+                  playsInline
+                  aria-label="Xem lại phim đã ghép"
+                  data-testid="success-video"
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
+                  onEnded={() => setIsPlaying(false)}
+                />
               )}
-              <button className={styles.playBtn} aria-label="Phát phim" type="button">▶</button>
+              {!isPlaying && (
+                <button
+                  className={styles.playBtn}
+                  aria-label="Phát phim"
+                  type="button"
+                  onClick={handleTogglePlay}
+                  data-testid="success-play-btn"
+                >
+                  ▶
+                </button>
+              )}
               <div className={styles.watermark}>watermark BBStopMotion</div>
             </div>
 
@@ -156,7 +213,7 @@ export default function SuccessScreen({ result, onNewFilm, language, frameCount,
           <div className={styles.buttonsRow}>
             <button
               className={styles.downloadBtn}
-              onClick={handleDownload}
+              onClick={() => void handleDownload()}
               aria-label="Tải phim về máy"
             >
               ⬇ {bilingualText(language, 'success.download')}

@@ -152,4 +152,77 @@ describe('SuccessScreen — auto-upload OFF (F8/TS-BS-28)', () => {
     )
     expect(screen.queryByText(/Your movie is ready/)).not.toBeInTheDocument()
   })
+
+  // ─── T-BS66 (PO test iPhone thật) — nút play không phát video ────────────────────────
+
+  it('T-BS66: bấm nút play trên khung video → gọi video.play() thật', async () => {
+    const playSpy = vi.spyOn(window.HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+    render(
+      <SuccessScreen
+        result={makeResult()}
+        onNewFilm={vi.fn()}
+        language="vi+en"
+        frameCount={10}
+        durationSeconds={2}
+        autoUpload={false}
+      />
+    )
+    const user = userEvent.setup()
+    await user.click(screen.getByTestId('success-play-btn'))
+    expect(playSpy).toHaveBeenCalledTimes(1)
+    playSpy.mockRestore()
+  })
+
+  // ─── T-BS66 — "Tải về máy" tải nhầm trang HTML thay vì file MP4 trên iOS Safari ───────
+
+  it('T-BS66: có Web Share API hỗ trợ chia sẻ file → dùng navigator.share(file MP4), không tải qua thẻ <a>', async () => {
+    const shareMock = vi.fn().mockResolvedValue(undefined)
+    const canShareMock = vi.fn().mockReturnValue(true)
+    Object.defineProperty(navigator, 'share', { configurable: true, value: shareMock })
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: canShareMock })
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    render(
+      <SuccessScreen
+        result={makeResult()}
+        onNewFilm={vi.fn()}
+        language="vi+en"
+        frameCount={10}
+        durationSeconds={2}
+        autoUpload={false}
+      />
+    )
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Tải phim về máy'))
+
+    await waitFor(() => expect(shareMock).toHaveBeenCalledTimes(1))
+    const shareArg = shareMock.mock.calls[0][0] as { files: File[] }
+    expect(shareArg.files[0]).toBeInstanceOf(File)
+    expect(shareArg.files[0].name).toBe('phim-test.mp4')
+    expect(shareArg.files[0].type).toBe('video/mp4')
+    expect(clickSpy).not.toHaveBeenCalled()
+
+    clickSpy.mockRestore()
+    delete (navigator as unknown as { share?: unknown }).share
+    delete (navigator as unknown as { canShare?: unknown }).canShare
+  })
+
+  it('T-BS66: không hỗ trợ Web Share API (desktop) → fallback tải qua thẻ <a download> đúng file MP4', async () => {
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    render(
+      <SuccessScreen
+        result={makeResult()}
+        onNewFilm={vi.fn()}
+        language="vi+en"
+        frameCount={10}
+        durationSeconds={2}
+        autoUpload={false}
+      />
+    )
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Tải phim về máy'))
+
+    await waitFor(() => expect(clickSpy).toHaveBeenCalledTimes(1))
+    clickSpy.mockRestore()
+  })
 })

@@ -16,6 +16,19 @@ export interface UseCameraReturn {
 
 const CAMERA_TIMEOUT_MS = 5000
 
+/** Điện thoại/tablet thật (touch + màn hẹp) — không nhận nhầm laptop có màn cảm ứng. Dùng để
+ *  mặc định mở camera SAU (facingMode environment) trên mobile: app chụp vật làm phim đặt trước
+ *  ống kính, không phải chụp selfie. Desktop (không touch, hoặc touch nhưng màn rộng) giữ nguyên
+ *  hành vi cũ — trình duyệt tự chọn camera mặc định. */
+function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') return false
+  // Chỉ dùng maxTouchPoints — `'ontouchstart' in window` không đáng tin: nhiều trình duyệt
+  // (kể cả jsdom) khai báo sẵn thuộc tính event-handler này dù máy không có màn cảm ứng thật.
+  const hasTouch = navigator.maxTouchPoints > 0
+  const narrow = window.innerWidth <= 820
+  return hasTouch && narrow
+}
+
 /**
  * @param preferredDeviceId Camera đã chọn ở Settings (F8, `settings.cameraDeviceId`), áp dụng
  *   MỘT LẦN lúc mount (CaptureScreen unmount/remount mỗi lần chuyển màn nên "áp lúc mount" là đủ
@@ -54,8 +67,15 @@ export function useCamera(preferredDeviceId?: string | null): UseCameraReturn {
       streamRef.current = null
     }
 
+    // T-BS66 — deviceId cụ thể (Settings hoặc switchCamera) luôn thắng. Không thì trên mobile
+    // ưu tiên camera SAU (`ideal` — không `exact` để không rớt OverconstrainedError trên máy chỉ
+    // có 1 camera/không hỗ trợ facingMode, vd fake device trong e2e test).
     const constraints: MediaStreamConstraints = {
-      video: deviceId ? { deviceId: { exact: deviceId } } : true,
+      video: deviceId
+        ? { deviceId: { exact: deviceId } }
+        : isMobileDevice()
+          ? { facingMode: { ideal: 'environment' } }
+          : true,
       audio: false,
     }
 

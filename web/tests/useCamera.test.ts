@@ -238,4 +238,61 @@ describe('useCamera state machine', () => {
       expect.objectContaining({ video: true }),
     )
   })
+
+  // T-BS66 — PO test iPhone thật: web mở camera TRƯỚC (selfie) mặc định, phải là camera SAU vì
+  // app dùng để chụp vật làm phim. Mobile = touch + màn hẹp (giả lập bằng maxTouchPoints + innerWidth).
+  describe('T-BS66 — camera mặc định trên mobile', () => {
+    const originalMaxTouchPoints = navigator.maxTouchPoints
+    const originalInnerWidth = window.innerWidth
+
+    afterEach(() => {
+      Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, value: originalMaxTouchPoints })
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: originalInnerWidth })
+    })
+
+    it('mobile (touch + màn hẹp), không truyền deviceId → mount xin facingMode environment (ideal), không exact', async () => {
+      Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, value: 5 })
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 })
+
+      const stream = makeMediaStream('cam-1')
+      getUserMediaMock.mockResolvedValueOnce(stream)
+
+      const { result } = renderHook(() => useCamera(null))
+
+      await waitFor(() => expect(result.current.state).toBe('live'))
+      expect(getUserMediaMock).toHaveBeenCalledWith(
+        expect.objectContaining({ video: { facingMode: { ideal: 'environment' } } }),
+      )
+    })
+
+    it('mobile nhưng đã có deviceId ưu tiên (Settings/switchCamera) → vẫn dùng exact deviceId, không ép facingMode', async () => {
+      Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, value: 5 })
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 })
+
+      const stream = makeMediaStream('cam-2')
+      getUserMediaMock.mockResolvedValueOnce(stream)
+
+      const { result } = renderHook(() => useCamera('cam-2'))
+
+      await waitFor(() => expect(result.current.state).toBe('live'))
+      expect(getUserMediaMock).toHaveBeenCalledWith(
+        expect.objectContaining({ video: { deviceId: { exact: 'cam-2' } } }),
+      )
+    })
+
+    it('desktop (không touch, dù màn hẹp) → vẫn dùng camera mặc định của trình duyệt như cũ', async () => {
+      Object.defineProperty(navigator, 'maxTouchPoints', { configurable: true, value: 0 })
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 })
+
+      const stream = makeMediaStream('cam-1')
+      getUserMediaMock.mockResolvedValueOnce(stream)
+
+      const { result } = renderHook(() => useCamera(null))
+
+      await waitFor(() => expect(result.current.state).toBe('live'))
+      expect(getUserMediaMock).toHaveBeenCalledWith(
+        expect.objectContaining({ video: true }),
+      )
+    })
+  })
 })
