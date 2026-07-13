@@ -39,6 +39,17 @@ export default function SettingsScreen({ settings, onChange }: Props) {
   // ghép cùng subtitle, không được nuốt (bug T-BS11 #2 — QA phát hiện qua overlay bằng mắt,
   // Δ hình học không bắt được vì đây là 1 khối span, không đổi kích thước khung ngoài).
   const titleSecondary = [titleLabel.sub, subtitleLabel.main].filter(Boolean).join(' ')
+  // T-BS72 fix-1 (QA FAIL điểm #1) — trên mobile, header xanh (Sidebar mobileHeader) đã hiện
+  // "Cài đặt · Settings" nên `.title` ở đây (trùng lặp) bị ẩn @720px. NHƯNG dòng phụ
+  // "Cài đặt (dành cho Thợ Cả) · Settings (for the Studio Lead)" (đối chiếu ios-settings.png)
+  // KHÔNG được ẩn theo — dựng riêng thành khối `mobileSubline` độc lập với `.title`, ghép theo
+  // ngôn ngữ (VI: title.main + subtitle.main, EN: title.sub + subtitle.sub) để khớp đúng chữ
+  // trên ảnh iOS chuẩn, thay vì tái dùng `titleSecondary` (vốn chỉ dành cho dòng tiêu đề desktop
+  // gộp 1 hàng, không chứa "Studio Lead").
+  const mobileSubline = [
+    [titleLabel.main, subtitleLabel.main].filter(Boolean).join(' '),
+    [titleLabel.sub, subtitleLabel.sub].filter(Boolean).join(' '),
+  ].filter(Boolean).join(' · ')
 
   return (
     <div data-landmark="settings-screen">
@@ -46,6 +57,11 @@ export default function SettingsScreen({ settings, onChange }: Props) {
         {titleLabel.main}{' '}
         {titleSecondary && <span className={styles.titleSub}>· {titleSecondary}</span>}
       </div>
+      {mobileSubline && (
+        <div className={styles.mobileSubline} data-testid="settings-mobile-subline">
+          {mobileSubline}
+        </div>
+      )}
 
       <div className={styles.card} style={{ marginTop: 14 }}>
         <div className={styles.row}>
