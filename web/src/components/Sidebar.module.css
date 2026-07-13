@@ -11,6 +11,29 @@
   transition: opacity var(--motion-normal);
 }
 
+/* T-BS71 — header xanh mobile (redline §1.1). Ẩn mặc định (desktop); hiện trong
+   @media (max-width:720px) bên dưới. Không ảnh hưởng bố cục desktop (display:none). */
+.mobileHeader {
+  display: none;
+}
+
+.mobileHeaderTitle {
+  color: #fff;
+  font-weight: 800;
+  font-size: 20px;
+}
+
+.mobileHeaderBadge {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .logoRow {
   display: flex;
   align-items: center;
@@ -170,33 +193,79 @@
   text-align: left;
 }
 
-/* T-BS60 — mobile: sidebar 248px cột dọc cố định trở thành thanh nav ngang gọn ở trên cùng,
-   để không tràn ngang và không chiếm hết chiều cao màn hình ngắn trước khi tới nội dung chính. */
+/* T-BS71 (wave-8 iOS parity) — thay bản T-BS60 "thanh nav ngang gọn ở trên cùng" bằng TAB BAR
+   ĐÁY CỐ ĐỊNH đúng chữ ký iOS (redline §1.2): 3 mục chia đều, icon trên/nhãn dưới, mục đang chọn
+   xanh. Header xanh riêng (.mobileHeader) đảm nhiệm phần "trên cùng" đã có ở T-BS60. */
 @media (max-width: 720px) {
   .sidebar {
     width: 100%;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
     flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    padding: 12px 16px;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    padding: 4px 8px calc(4px + env(safe-area-inset-bottom)) 8px;
     border-right: none;
-    border-bottom: 1px solid var(--color-border-soft);
-    gap: 8px;
+    border-bottom: none;
+    border-top: 1px solid var(--color-border-soft);
+    gap: 0;
+    background: var(--color-bg-surface);
+    z-index: 60;
+    box-sizing: border-box;
+    transition: none;
   }
 
+  /* Redline §6 — khi đang export (locked), ẨN HẲN header + tab bar (không chỉ mờ đi như desktop),
+     giống modal toàn màn iOS (ios-export.png không có header/tab bar). */
+  .sidebar[data-locked='true'] {
+    display: none;
+  }
+
+  .mobileHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    min-height: var(--mobile-header-height);
+    padding: calc(env(safe-area-inset-top) + 14px) 16px 14px 16px;
+    background: var(--color-primary);
+    z-index: 60;
+    box-sizing: border-box;
+  }
+
+  /* Redline §1.1 — bỏ logo hộp "BB" + chữ "studio" ở header mobile (header xanh riêng đã thay). */
   .logoRow {
-    padding: 0;
-    margin-right: auto;
+    display: none;
   }
 
   .navList {
+    flex: 1;
     flex-direction: row;
-    gap: 6px;
+    gap: 0;
+    justify-content: space-around;
   }
 
   .navItem {
+    flex: 1;
     width: auto;
-    padding: 8px 12px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 4px;
+    min-height: 52px;
+    text-align: center;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .navIcon {
+    font-size: 22px;
   }
 
   .navSub {

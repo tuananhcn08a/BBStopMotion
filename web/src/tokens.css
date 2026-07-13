@@ -98,4 +98,10 @@
   --motion-normal: 200ms ease-out;
   --motion-slow: 280ms ease-out;
   --motion-spring: 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ---------- Mobile chrome (wave-8 iOS parity, T-BS71) ----------
+     Chỉ tiêu thụ bên trong @media (max-width: 720px) — không ảnh hưởng desktop
+     (custom property không tự render nếu không có rule nào tham chiếu). */
+  --mobile-header-height: 64px;
+  --mobile-tabbar-height: 64px;
 }

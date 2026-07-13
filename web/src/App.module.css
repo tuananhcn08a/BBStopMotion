@@ -17,14 +17,22 @@
 }
 
 /* T-BS60 — mobile: sidebar 248px cố định nằm cạnh content sẽ tràn ngang trên viewport hẹp.
-   Xếp sidebar lên trên, content cuộn dọc bên dưới thay vì bố cục 2 cột desktop. */
+   Xếp sidebar lên trên, content cuộn dọc bên dưới thay vì bố cục 2 cột desktop.
+   T-BS71 (wave-8) — Sidebar giờ là header xanh CỐ ĐỊNH TRÊN + tab bar CỐ ĐỊNH ĐÁY (position:fixed,
+   không chiếm chỗ trong flex flow) — .main phải tự chừa padding trên/dưới bằng chiều cao 2 thanh
+   đó (token --mobile-header-height/--mobile-tabbar-height) + safe-area-inset, nếu không nội dung
+   đầu/cuối màn bị header/tab bar đè lên (redline §8: "nội dung không bị tab bar che"). */
 @media (max-width: 720px) {
   .shell {
     flex-direction: column;
   }
 
   .main {
-    padding: 16px;
+    padding:
+      calc(var(--mobile-header-height) + env(safe-area-inset-top) + 16px)
+      16px
+      calc(var(--mobile-tabbar-height) + env(safe-area-inset-bottom) + 16px)
+      16px;
   }
 }
 

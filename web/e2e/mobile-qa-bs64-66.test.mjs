@@ -8,8 +8,9 @@
  *  A. Welcome (390×844) — không cần cuộn để thấy nút Start; không còn hint "nút xanh trên bàn";
  *     icon trang trí (.deco) không hiện đè logo/nút.
  *  B. Capture — camera mở mặc định facingMode=environment (SAU) trên mobile (chặn getUserMedia
- *     đo constraints thật, không suy đoán qua UI); nút xoá frame HIỆN sẵn không cần hover (computed
- *     display, không phải :hover giả lập).
+ *     đo constraints thật, không suy đoán qua UI); xoá frame qua nút 🗑 hàng-3-nút (T-BS71 wave-8:
+ *     × per-frame trên filmstrip đã BỎ theo redline iOS parity §2.4 — SUPERSEDES phần B3/B4 gốc
+ *     của T-BS64 vốn đo × luôn hiện trên từng thumbnail; nay đo đúng affordance mới "xoá frame cuối").
  *  C. Library — nút xoá phim HIỆN sẵn không cần hover.
  *  D. Success — bấm nút play → video thật sự play() (video.paused chuyển false); nút Tải về máy
  *     tải đúng blob video/mp4 (không phải điều hướng sang trang HTML).
@@ -136,21 +137,23 @@ try {
     await page.click('[data-landmark="capture-btn"]').catch(() => {})
     await sleep(400)
 
-    // Nút xoá frame: computed display phải KHÁC 'none' mà KHÔNG cần :hover/:focus giả lập
-    const deleteVisibleNoHover = await page.evaluate(() => {
+    // T-BS71 (wave-8 iOS parity, SUPERSEDES T-BS64 B3/B4) — × per-frame trên filmstrip đã BỎ
+    // (redline §2.4, đối chiếu iOS không có × trên từng thumbnail). Xoá giờ qua nút 🗑 ở hàng
+    // 3 nút [🗑|📷|▶] dưới preview (xoá frame CUỐI — `data-testid="delete-last-btn"`).
+    const filmstripDeleteGone = await page.evaluate(() => {
       const btn = document.querySelector('[data-testid="delete-frame-0"]')
       if (!btn) return { found: false }
       const cs = getComputedStyle(btn)
-      return { found: true, display: cs.display, visible: cs.display !== 'none' }
+      return { found: true, hidden: cs.display === 'none' }
     })
-    report('B3-delete-frame-btn-visible-without-hover', deleteVisibleNoHover.found && deleteVisibleNoHover.visible, JSON.stringify(deleteVisibleNoHover))
+    report('B3-per-frame-delete-x-hidden-on-mobile', !filmstripDeleteGone.found || filmstripDeleteGone.hidden, JSON.stringify(filmstripDeleteGone))
 
-    // Bấm thật (không hover trước) → frame count giảm
+    // Bấm nút 🗑 hàng-3-nút (xoá frame cuối) → frame count giảm
     const before = await page.evaluate(() => document.querySelector('[data-landmark="frame-counter"]')?.textContent?.match(/^(\d+)/)?.[1])
-    await page.click('[data-testid="delete-frame-0"]').catch(() => {})
+    await page.click('[data-testid="delete-last-btn"]').catch(() => {})
     await sleep(300)
     const after = await page.evaluate(() => document.querySelector('[data-landmark="frame-counter"]')?.textContent?.match(/^(\d+)/)?.[1])
-    report('B4-delete-frame-btn-tappable-no-prior-hover', Number(after) < Number(before), `before=${before} after=${after}`)
+    report('B4-delete-last-btn-tappable-decrements-frame', Number(after) < Number(before), `before=${before} after=${after}`)
 
     await page.screenshot({ path: path.join(SHOT_DIR, 'F-capture-backcam-delete.png') })
     await page.close()

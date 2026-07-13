@@ -54,11 +54,11 @@
   font-weight: 700;
 }
 
-/* T-BS60 — mobile: 3 chip bước (mỗi chip có text dài "1 Chụp · Capture"...) nowrap tràn ngang
-   trên điện thoại. Cho wrap xuống dòng thay vì ép vừa 1 hàng như desktop. */
+/* T-BS71 (wave-8 iOS parity) — thay bản T-BS60 "cho wrap xuống dòng" bằng ẨN HẲN trên mobile.
+   Redline §1.3: iOS không có thanh "1 Chụp · 2 Xuất · 3 Chia sẻ" — điều hướng dùng tab bar đáy
+   (Sidebar) + nút hành động trong luồng (Xuất phim!/Làm phim mới) thay cho step indicator. */
 @media (max-width: 720px) {
   .row {
-    flex-wrap: wrap;
-    row-gap: 8px;
+    display: none;
   }
 }

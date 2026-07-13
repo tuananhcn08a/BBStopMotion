@@ -138,22 +138,23 @@
   font-weight: 700;
 }
 
-/* T-BS64 — mobile: nút xoá phụ thuộc :hover/:focus-within không bao giờ hiện được trên cảm ứng
-   (bug thật, không chỉ câu chữ). Bỏ phụ thuộc hover, luôn hiện; tăng nhẹ kích thước cho dễ chạm
-   hơn trong khung thumb 96×60 nhỏ (không đạt 44px lý tưởng vì sẽ đè lên ảnh). */
+/* T-BS71 (wave-8 iOS parity) — thay bản T-BS64 "luôn hiện nút × trên mobile" bằng ẨN HẲN.
+   Redline §2.4: iOS không có × đỏ trên từng frame filmstrip — xoá frame giờ qua nút 🗑 ở hàng 3
+   nút bên dưới (xoá frame cuối, xem CaptureScreen `data-testid="delete-last-btn"`). Hành vi F1
+   (xoá theo index bất kỳ, `onDeleteFrame`) vẫn còn nguyên trong code cho desktop — chỉ ẩn UI
+   trên mobile, không xoá handler/behavior.
+   `.wrap{order:1}` — đặt filmstrip ngay sau khung preview (order:0), trước hàng 3 nút
+   (CaptureScreen `.controlsRow{order:2}`), đúng thứ tự dọc iOS. */
 @media (max-width: 720px) {
   .hintDesktop { display: none; }
   .hintMobile { display: inline; }
 
-  .deleteBtn,
-  .thumbOutline {
-    display: flex;
+  .wrap {
+    order: 1;
   }
 
-  .deleteBtn {
-    width: 26px;
-    height: 26px;
-    top: -8px;
-    right: -8px;
+  .deleteBtn,
+  .thumbOutline {
+    display: none;
   }
 }

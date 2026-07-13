@@ -24,6 +24,15 @@ export default function Sidebar({ screen, onNavigate, variant, locked, language,
   const remaining = Math.max(goalFrames - frameCount, 0)
   const goalReached = frameCount >= goalFrames
 
+  // T-BS71 — tiêu đề header xanh mobile theo từng màn (redline §1.1). `screen` + `variant` đã đủ
+  // phân biệt Capture(full)/Success(capture+compact)/Library/Settings — Export không tới đây vì
+  // `locked` ẩn hẳn cả header+tab bar (xem .sidebar[data-locked="true"] mobile trong CSS module).
+  const mobileHeaderTitle = screen === 'library'
+    ? bilingualText(language, 'nav.library')
+    : screen === 'settings'
+      ? bilingualText(language, 'settings.title')
+      : 'BBStopMotion'
+
   return (
     <div
       className={styles.sidebar}
@@ -33,6 +42,17 @@ export default function Sidebar({ screen, onNavigate, variant, locked, language,
       style={locked ? { opacity: 0.55, pointerEvents: 'none' } : undefined}
       aria-hidden={locked}
     >
+      {/* T-BS71 — header xanh mobile (redline §1.1). Ẩn mặc định (desktop), chỉ hiện
+          @media (max-width:720px) qua Sidebar.module.css. */}
+      <div className={styles.mobileHeader} data-landmark="mobile-header">
+        <span className={styles.mobileHeaderTitle}>{mobileHeaderTitle}</span>
+        {variant === 'full' && (
+          <span className={styles.mobileHeaderBadge} data-testid="mobile-header-badge">
+            {frameCount} / {goalFrames} ⭐
+          </span>
+        )}
+      </div>
+
       <div className={styles.logoRow}>
         <div className={styles.logoIcon}>BB</div>
         <div className={styles.wordmark}>

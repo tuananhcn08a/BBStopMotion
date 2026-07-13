@@ -138,6 +138,11 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
                       {new Date(entry.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
+                  {/* Giữ nguyên 1 text node như bản gốc (KHÔNG tách span icon/text) — tests hiện
+                      có (LibraryScreen.qr.test.tsx) dùng getByText khớp text trực tiếp của node
+                      này; RTL getByText chỉ so khớp text node CON TRỰC TIẾP, tách span con sẽ làm
+                      "biến mất" khỏi kết quả khớp. Trên mobile chỉ nén gọn padding/font-size qua
+                      CSS (T-BS71 §3), không ẩn chữ. */}
                   <span
                     className={`${styles.badge} ${hasUpload ? styles.badgeUploaded : styles.badgeNotUploaded}`}
                     data-landmark={`library-row-${rowIndex}-badge`}
@@ -159,7 +164,12 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
                       disabled={isUploading}
                       data-testid={`upload-${entry.id}`}
                     >
-                      {isUploading ? '...' : `↻ ${label(language, 'library.upload').main}`}
+                      {isUploading ? '...' : (
+                        <>
+                          <span aria-hidden="true">↻</span>{' '}
+                          <span className={styles.btnText}>{label(language, 'library.upload').main}</span>
+                        </>
+                      )}
                     </button>
                   )}
                   <button
@@ -168,7 +178,8 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
                     data-testid={`play-${entry.id}`}
                     data-landmark={`library-row-${rowIndex}-btn`}
                   >
-                    ▶ {label(language, 'library.play').main}
+                    <span aria-hidden="true">▶</span>{' '}
+                    <span className={styles.btnText}>{label(language, 'library.play').main}</span>
                   </button>
                   <button
                     type="button"
@@ -179,6 +190,9 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
                   >
                     {isConfirming ? `🗑 ${label(language, 'library.deleteConfirm').main}` : '🗑'}
                   </button>
+                  {/* T-BS71 — chevron thuần trang trí (redline §3, khớp iOS card). KHÔNG onClick,
+                      không đổi hành vi — chỉ hiện trên mobile qua CSS. */}
+                  <span className={styles.chevron} aria-hidden="true">›</span>
                 </div>
               )
             })}

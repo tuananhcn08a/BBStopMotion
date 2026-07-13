@@ -413,7 +413,9 @@ export default function CaptureScreen({
           >
             📷
           </button>
-          <div>
+          {/* T-BS71 — redline §2.1: bỏ chữ "CHỤP · Snap" cạnh nút chụp trên mobile (chỉ ẩn qua
+              CSS .captureLabelWrap; desktop giữ nguyên hiển thị). */}
+          <div className={styles.captureLabelWrap}>
             <div className={styles.capLabel}>
               {captureBtnLabel.main} {captureBtnLabel.sub && <span className={styles.capLabelSub}>· {captureBtnLabel.sub}</span>}
             </div>
@@ -422,25 +424,33 @@ export default function CaptureScreen({
         </div>
 
         <div className={styles.actionCol}>
+          {/* T-BS71 — redline §2.1: hàng 3 nút iOS [🗑|📷|▶]. Trên mobile, actionCol trở thành
+              `display:contents` (CSS) để 2 nút này "thoát" ra ngang hàng với captureWrap trong 1
+              CSS Grid ở .controlsRow — không đổi onClick/aria-label/hành vi, chỉ thêm class hook
+              (actionPlay/actionUndo) + tách icon/text ra 2 span riêng để CSS ẩn phần chữ trên mobile
+              (icon-only, giống iOS) mà KHÔNG mất accessible name (vẫn còn aria-label đầy đủ). */}
           <button
-            className={styles.actionBtn}
+            className={`${styles.actionBtn} ${styles.actionPlay}`}
             onClick={handleTogglePreview}
             aria-label={isPreviewMode ? 'Dừng xem lại — phím P hoặc Esc' : 'Xem lại phim — phím P'}
             disabled={frames.length < 2}
             aria-disabled={frames.length < 2}
           >
-            {isPreviewMode ? '⏸' : '▶'} {bilingualText(language, 'action.play')}
+            <span className={styles.actionIcon} aria-hidden="true">{isPreviewMode ? '⏸' : '▶'}</span>{' '}
+            <span className={styles.actionLabelText}>{bilingualText(language, 'action.play')}</span>
             <span className={styles.actionRight}>P</span>
           </button>
 
           <button
-            className={styles.actionBtn}
+            className={`${styles.actionBtn} ${styles.actionUndo}`}
             onClick={handleDeleteLast}
             aria-label="Xoá frame cuối — phím Del"
             disabled={frames.length === 0}
             aria-disabled={frames.length === 0}
+            data-testid="delete-last-btn"
           >
-            🗑 {bilingualText(language, 'action.undo')}
+            <span className={styles.actionIcon} aria-hidden="true">🗑</span>{' '}
+            <span className={styles.actionLabelText}>{bilingualText(language, 'action.undo')}</span>
             <span className={styles.actionRight}>Del</span>
           </button>
 

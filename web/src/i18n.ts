@@ -59,7 +59,11 @@ export const STRINGS = {
   },
   // T-BS64 — copy mobile đúng sự thật (chỉ xoá được, KHÔNG có tính năng "xem lại" khi chạm/hover
   // 1 frame — Coordinator đã chốt không hứa hẹn tính năng chưa tồn tại).
-  'filmstrip.hintMobile': { vi: 'Chạm × để xoá frame', en: 'Tap × to delete a frame' },
+  // T-BS71 (wave-8 iOS parity) — × trên từng thumbnail đã BỎ trên mobile (redline §2.4, đối chiếu
+  // iOS không có × trên frame); câu cũ "Chạm × để xoá frame" không còn đúng sự thật nữa nên sửa
+  // lại theo đúng affordance mới (nút 🗑 ở hàng 3 nút, xoá frame CUỐI). Đây là sửa copy hiển thị đi
+  // kèm bắt buộc theo thay đổi thị giác/layout của T-BS71, KHÔNG đổi logic i18n hay hành vi xoá.
+  'filmstrip.hintMobile': { vi: 'Chạm 🗑 để xoá frame cuối', en: 'Tap 🗑 to delete the last frame' },
   'export.title': { vi: 'Đang ghép phim của con...', en: 'Creating your movie...' },
   'export.stageMp4': { vi: 'Ghép MP4', en: 'Compose MP4' },
   'export.stageGif': { vi: 'Tạo GIF', en: 'Create GIF' },

@@ -156,3 +156,43 @@
   font-size: 12px;
   font-weight: var(--typ-weight-semibold);
 }
+
+/* T-BS71 (wave-8 iOS parity) — redline §4:
+   1) Tiêu đề lớn ".title" trùng lặp với header xanh mobile (Sidebar) — ẩn trên mobile để không
+      lặp "Cài đặt · Settings" 2 lần (header xanh đã đảm nhiệm, xem Sidebar.module.css).
+   2) Sửa lỗi chữ wrap/tràn "Ngôn ngữ · Language"/"Tốc độ mặc định": control RỘNG (segmented
+      nhiều nút / slider) không đủ chỗ cạnh tiêu đề trên viewport hẹp → ép xuống HÀNG RIÊNG full
+      width bên dưới tiêu đề (đúng nhịp iOS Settings), thay vì bó chung 1 hàng làm tiêu đề vỡ chữ.
+      Control GỌN (toggle/dropdown ngắn) vẫn giữ nguyên hàng như cũ (đủ chỗ, không cần tách). */
+@media (max-width: 720px) {
+  .title {
+    display: none;
+  }
+
+  .row {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .sliderRow,
+  .segmented {
+    flex: 1 1 100%;
+    width: 100%;
+    margin-left: calc(38px + 14px); /* thẳng hàng dưới tiêu đề: iconChip(38px) + gap(14px) */
+    box-sizing: border-box;
+  }
+
+  .slider {
+    width: 100%;
+    flex: 1;
+  }
+
+  .segmented {
+    justify-content: space-between;
+  }
+
+  .segItem {
+    flex: 1;
+    text-align: center;
+  }
+}

@@ -491,35 +491,95 @@
   color: var(--color-warn-text);
 }
 
-/* T-BS60 — mobile: controlsRow (FpsSelector + nút chụp + actionCol 250px) nằm ngang 1 hàng sẽ
-   rộng hơn viewport điện thoại. Cho phép wrap + actionCol full width để nút Xuất luôn bấm tới.
-   stepRow (3 chip StepIndicator + spacer + onionToggle) cũng cần wrap vì cùng lý do.
-   T-BS64 — đổi sang cột dọc + `order` để đúng thứ tự redline: chụp → tốc độ → action (không
-   khớp thứ tự DOM hiện tại là tốc độ → chụp → action), bỏ hint bàn phím/chuột/ThingBot,
-   thêm nút lật camera đã style riêng ở trên. */
+/* T-BS71 (wave-8 iOS parity) — thay bản T-BS64 "cột dọc chụp→tốc độ→action" (3 nút full-width
+   text xếp chồng) bằng chữ ký iOS thật (redline §2): 1 HÀNG NGANG 3 NÚT [🗑|📷|▶] căn giữa, rồi
+   nút "Xuất phim!" xanh full-width riêng bên dưới, tốc độ/onion nén nhỏ ở cuối cùng.
+   Kỹ thuật: `.actionCol` (bọc Play/Undo/Export ở JSX) chuyển display:contents để 3 nút con
+   "thoát" ra làm item trực tiếp của CSS Grid `.controlsRow` — không đổi onClick/state/DOM,
+   chỉ đổi cách trình bày. Filmstrip/stepRow dùng `order` để xen giữa preview/controlsRow theo
+   đúng thứ tự iOS (preview → filmstrip → hàng 3 nút → Xuất → tốc độ/onion, xem thêm
+   Filmstrip.module.css `.wrap{order:1}` + `.stepRow{order:3}` bên dưới). */
 @media (max-width: 720px) {
   .hintDesktop { display: none; }
   .hintMobile { display: inline; }
 
+  .previewBox {
+    order: 0;
+  }
+
   .controlsRow {
-    flex-direction: column;
-    align-items: stretch;
-    flex-wrap: nowrap;
-    gap: 14px;
+    order: 2;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-areas:
+      'undo capture play'
+      'export export export'
+      'speed speed speed';
+    align-items: center;
+    justify-items: center;
+    row-gap: 14px;
+    column-gap: 12px;
   }
 
   .speedWrap {
-    order: 1;
+    grid-area: speed;
     width: 100%;
   }
 
   .captureWrap {
-    order: 0;
+    grid-area: capture;
+    display: flex;
   }
 
+  /* Redline §2.1 — bỏ chữ "CHỤP · Snap" cạnh nút chụp trên mobile (chỉ icon cam lớn). */
+  .captureLabelWrap {
+    display: none;
+  }
+
+  /* actionCol (bọc Play/Undo/Export) "biến mất" khỏi layout — 3 nút con trở thành item trực
+     tiếp của grid .controlsRow ở trên, xếp đúng vị trí qua grid-area riêng từng nút. */
   .actionCol {
-    order: 2;
+    display: contents;
+  }
+
+  .actionPlay,
+  .actionUndo {
+    grid-area: play;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-full);
+    padding: 0;
+    justify-content: center;
+    background: var(--color-bg-surface);
+    box-shadow: 0 2px 8px rgba(28, 50, 85, 0.14);
+    border: none;
+  }
+
+  .actionUndo {
+    grid-area: undo;
+  }
+
+  .actionIcon {
+    font-size: 20px;
+  }
+
+  /* Icon-only trên mobile (giống iOS) — chữ vẫn còn trong DOM cho desktop, aria-label vẫn đầy
+     đủ nên không mất accessible name khi ẩn chữ hiển thị. */
+  .actionLabelText {
+    display: none;
+  }
+
+  .actionExport,
+  .actionExportDisabled {
+    grid-area: export;
     width: 100%;
+    box-sizing: border-box;
+  }
+
+  .exportError {
+    grid-column: 1 / -1;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .capKeys {
@@ -534,13 +594,16 @@
     min-height: 44px;
   }
 
+  /* Redline §1.3 — StepIndicator tự ẩn (xem StepIndicator.module.css); .stepRow chỉ còn lại
+     onionToggle, đẩy xuống cuối khối Chụp (§2.3: onion là phụ, nén gọn, không phá layout chính). */
   .stepRow {
+    order: 3;
+    justify-content: center;
     flex-wrap: wrap;
     row-gap: 8px;
   }
 
   .stepRowSpacer {
-    flex-basis: 100%;
-    height: 0;
+    display: none;
   }
 }

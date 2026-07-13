@@ -216,11 +216,28 @@
   padding: 40px 0;
 }
 
+/* T-BS71 — chevron trang trí kiểu iOS (redline §3); ẩn mặc định (desktop), chỉ hiện mobile. */
+.chevron {
+  display: none;
+  color: var(--color-text-disabled);
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
 /* T-BS60 — mobile: .row (thumb + info + badge + 2 nút white-space:nowrap) không wrap sẽ tràn
-   ngang trên điện thoại. Cho wrap xuống dòng 2 thay vì ép vừa 1 hàng như desktop. */
+   ngang trên điện thoại. Cho wrap xuống dòng 2 thay vì ép vừa 1 hàng như desktop.
+   T-BS71 (wave-8 iOS parity) — bổ sung: bỏ chip lọc (redline §3), card gọn kiểu iOS (badge/nút
+   icon-only + chevron), nút xoá mặc định KHÔNG còn đỏ (chỉ đỏ khi đang xác nhận — "kín đáo" hơn
+   thay vì tròn đỏ nổi mặc định như trước). */
 @media (max-width: 720px) {
   .topRow {
     flex-wrap: wrap;
+  }
+
+  /* Redline §3 — bỏ chip lọc (Tất cả/Hôm nay/Tuần này) trên mobile, iOS không có. */
+  .filters {
+    display: none;
   }
 
   .row {
@@ -236,14 +253,46 @@
     flex: 1 1 140px;
   }
 
+  /* Play/Upload icon-only trên mobile (giống iOS) — chữ vẫn trong DOM cho desktop, chỉ ẩn hiển
+     thị (không tách badge vì badge giữ nguyên 1 text node cho tương thích getByText hiện có,
+     xem ghi chú trong LibraryScreen.tsx). */
+  .btnText {
+    display: none;
+  }
+
+  .badge {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .btnPrimary,
+  .btnSecondary {
+    padding: 8px 11px;
+  }
+
+  .chevron {
+    display: inline-flex;
+    align-items: center;
+  }
+
   /* T-BS64 — nút xoá phim phụ thuộc :hover/:focus-within không bao giờ hiện được trên cảm ứng
      (bug thật, giống Filmstrip). Thoát khỏi absolute + luôn hiện, xếp vào cuối hàng như 1 nút
-     bình thường thay vì đè lên nội dung. */
+     bình thường thay vì đè lên nội dung.
+     T-BS71 — mặc định đổi màu xám kín đáo (KHÔNG đỏ nổi, redline §3); chỉ đỏ khi đang ở bước
+     xác nhận xoá (.deleteBtnConfirm, giữ nguyên hành vi xác nhận 2 bước đã có). */
   .deleteBtn {
     display: flex;
     position: static;
     width: 40px;
     height: 40px;
     flex-shrink: 0;
+    background: var(--color-bg-tint);
+    color: var(--color-text-secondary);
+    box-shadow: none;
+  }
+
+  .deleteBtnConfirm {
+    background: var(--color-error-deep, var(--color-error));
+    color: #fff;
   }
 }
