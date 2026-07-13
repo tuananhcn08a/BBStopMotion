@@ -34,22 +34,10 @@ export default function SettingsScreen({ settings, onChange }: Props) {
   // F8 (T-BS35) — danh sách camera thật, KHÔNG mở stream riêng (xem useCameraDevices.ts).
   const { devices } = useCameraDevices()
   const titleLabel = label(language, 'settings.title')
-  const subtitleLabel = label(language, 'settings.subtitle')
-  // Redline 1h literal: "Cài đặt · Settings (dành cho Thợ Cả)" — title.sub ("Settings") PHẢI
-  // ghép cùng subtitle, không được nuốt (bug T-BS11 #2 — QA phát hiện qua overlay bằng mắt,
-  // Δ hình học không bắt được vì đây là 1 khối span, không đổi kích thước khung ngoài).
-  const titleSecondary = [titleLabel.sub, subtitleLabel.main].filter(Boolean).join(' ')
-  // T-BS72 fix-1 (QA FAIL điểm #1) — trên mobile, header xanh (Sidebar mobileHeader) đã hiện
-  // "Cài đặt · Settings" nên `.title` ở đây (trùng lặp) bị ẩn @720px. NHƯNG dòng phụ
-  // "Cài đặt (dành cho Thợ Cả) · Settings (for the Studio Lead)" (đối chiếu ios-settings.png)
-  // KHÔNG được ẩn theo — dựng riêng thành khối `mobileSubline` độc lập với `.title`, ghép theo
-  // ngôn ngữ (VI: title.main + subtitle.main, EN: title.sub + subtitle.sub) để khớp đúng chữ
-  // trên ảnh iOS chuẩn, thay vì tái dùng `titleSecondary` (vốn chỉ dành cho dòng tiêu đề desktop
-  // gộp 1 hàng, không chứa "Studio Lead").
-  const mobileSubline = [
-    [titleLabel.main, subtitleLabel.main].filter(Boolean).join(' '),
-    [titleLabel.sub, subtitleLabel.sub].filter(Boolean).join(' '),
-  ].filter(Boolean).join(' · ')
+  // PO chốt 2026-07-13 (T-BS78): bỏ hẳn "(dành cho Thợ Cả)"/"(for the Studio Lead)" — tiêu đề
+  // chỉ còn "Cài đặt · Settings" (titleLabel.sub = "Settings" khi language='vi+en', null khi
+  // chỉ 1 ngôn ngữ nên không hiện phần phụ thừa).
+  const titleSecondary = titleLabel.sub
 
   return (
     <div data-landmark="settings-screen">
@@ -57,11 +45,6 @@ export default function SettingsScreen({ settings, onChange }: Props) {
         {titleLabel.main}{' '}
         {titleSecondary && <span className={styles.titleSub}>· {titleSecondary}</span>}
       </div>
-      {mobileSubline && (
-        <div className={styles.mobileSubline} data-testid="settings-mobile-subline">
-          {mobileSubline}
-        </div>
-      )}
 
       <div className={styles.card} style={{ marginTop: 14 }}>
         <div className={styles.row}>

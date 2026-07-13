@@ -123,7 +123,6 @@ export const STRINGS = {
     en: 'This film file is no longer on this device (tab closed or page reloaded) — make a new film to upload!',
   },
   'settings.title': { vi: 'Cài đặt', en: 'Settings' },
-  'settings.subtitle': { vi: '(dành cho Thợ Cả)', en: '(for the Studio Lead)' },
   'settings.camera': { vi: 'Camera', en: 'Camera' },
   'settings.onion': { vi: 'Onion skin', en: 'Onion skin' },
   'settings.defaultSpeed': { vi: 'Tốc độ mặc định', en: 'Default speed' },

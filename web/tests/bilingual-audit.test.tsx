@@ -85,10 +85,9 @@ describe('Render bilingual — WelcomeScreen CTA (bug gốc QA #1)', () => {
 
 describe('Render bilingual — SettingsScreen title + Ngôn ngữ row (bug gốc QA #2)', () => {
   it('tiêu đề hiện "Cài đặt" VÀ "Settings" cùng lúc', () => {
+    // T-BS78: khối `.mobileSubline` (T-BS72 fix-1) đã bị gỡ bỏ cùng "(dành cho Thợ Cả)" — vẫn
+    // lấy theo data-landmark (thay vì getByText) để chịu được thay đổi cấu trúc DOM tương lai.
     const { container } = render(<SettingsScreen settings={{ ...DEFAULT_SETTINGS, language: 'vi+en' }} onChange={vi.fn()} />)
-    // T-BS72 fix-1: thêm khối `.mobileSubline` (dòng phụ mobile, luôn trong DOM, chỉ ẩn bằng CSS
-    // @media desktop — jsdom không áp CSS thật) nên "Cài đặt" giờ xuất hiện ≥2 chỗ trên màn; lấy
-    // thẳng root theo data-landmark thay vì getByText để tránh lỗi "multiple elements found".
     const screenRoot = container.querySelector('[data-landmark="settings-screen"]') as HTMLElement
     expect(screenRoot).toHaveTextContent('Cài đặt')
     expect(screenRoot).toHaveTextContent('Settings')

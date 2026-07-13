@@ -87,34 +87,34 @@ describe('SettingsScreen — camera device dropdown (T-BS35 AC1)', () => {
 })
 
 /**
- * T-BS72 fix-1 (QA gate-web-mobile-ios-parity-report.md, Cài đặt: FAIL) — regression test.
- * Bug gốc: `.title` (chứa CẢ dòng phụ "Cài đặt (dành cho Thợ Cả)...") bị `display:none` nguyên
- * khối @media(max-width:720px) để tránh trùng header xanh mobile → xoá LUÔN dòng phụ, không chỉ
- * phần tiêu đề trùng. Bản vá tách dòng phụ ra khối `.mobileSubline` riêng, độc lập với `.title`,
- * ghép theo ngôn ngữ để khớp `ios-settings.png` ("Cài đặt (dành cho Thợ Cả) · Settings (for the
- * Studio Lead)"). jsdom không áp CSS thật (display:none không ẩn phần tử) nên test này xác nhận
- * NỘI DUNG luôn có mặt trong DOM — việc ẩn/hiện theo viewport được QA xác nhận bằng gate thật
- * (e2e/mobile-qa-bs64-66.test.mjs, browser thật).
+ * T-BS78 (PO chốt bỏ "Thợ Cả" mọi nền, 2026-07-13) — regression test.
+ * T-BS72 fix-1 từng thêm khối `.mobileSubline` riêng để giữ dòng phụ "Cài đặt (dành cho Thợ
+ * Cả)..." không bị ẩn theo `.title` @720px. Nay bỏ hẳn "Thợ Cả": nếu chỉ xoá 2 cụm chữ thì dòng
+ * phụ chỉ còn "Cài đặt · Settings" — TRÙNG header xanh mobile (Sidebar) → gỡ HẲN khối
+ * `.mobileSubline`, không thay bằng nội dung khác (header đã đảm nhiệm hiển thị tên màn hình).
  */
-describe('SettingsScreen — dòng phụ mobile "Cài đặt (dành cho Thợ Cả)..." (T-BS72 fix-1)', () => {
-  it('vi+en: dòng phụ hiện đủ "Cài đặt (dành cho Thợ Cả)" VÀ "Settings (for the Studio Lead)"', () => {
+describe('SettingsScreen — không còn dòng phụ mobile trùng header (T-BS78)', () => {
+  it('không render khối .mobileSubline (data-testid="settings-mobile-subline") ở bất kỳ ngôn ngữ nào', () => {
     render(<SettingsScreen settings={{ ...DEFAULT_SETTINGS, language: 'vi+en' }} onChange={vi.fn()} />)
-    const sub = screen.getByTestId('settings-mobile-subline')
-    expect(sub).toHaveTextContent('Cài đặt (dành cho Thợ Cả)')
-    expect(sub).toHaveTextContent('Settings (for the Studio Lead)')
+    expect(screen.queryByTestId('settings-mobile-subline')).not.toBeInTheDocument()
   })
 
-  it('vi: dòng phụ chỉ hiện phần tiếng Việt, không rỗng', () => {
-    render(<SettingsScreen settings={{ ...DEFAULT_SETTINGS, language: 'vi' }} onChange={vi.fn()} />)
-    const sub = screen.getByTestId('settings-mobile-subline')
-    expect(sub).toHaveTextContent('Cài đặt (dành cho Thợ Cả)')
-    expect(sub).not.toHaveTextContent('Studio Lead')
+  it('không còn chữ "Thợ Cả"/"Studio Lead" ở màn Settings (mọi ngôn ngữ)', () => {
+    const { container: viEn } = render(
+      <SettingsScreen settings={{ ...DEFAULT_SETTINGS, language: 'vi+en' }} onChange={vi.fn()} />,
+    )
+    expect(viEn).not.toHaveTextContent('Thợ Cả')
+    expect(viEn).not.toHaveTextContent('Studio Lead')
   })
 
-  it('en: dòng phụ chỉ hiện phần tiếng Anh, không rỗng', () => {
-    render(<SettingsScreen settings={{ ...DEFAULT_SETTINGS, language: 'en' }} onChange={vi.fn()} />)
-    const sub = screen.getByTestId('settings-mobile-subline')
-    expect(sub).toHaveTextContent('Settings (for the Studio Lead)')
-    expect(sub).not.toHaveTextContent('Thợ Cả')
+  it('tiêu đề desktop (.title, vi+en) còn đúng "Cài đặt · Settings"', () => {
+    const { container } = render(
+      <SettingsScreen settings={{ ...DEFAULT_SETTINGS, language: 'vi+en' }} onChange={vi.fn()} />,
+    )
+    const title = container.querySelector('[data-landmark="settings-screen"] > div')
+    expect(title).toHaveTextContent('Cài đặt')
+    expect(title).toHaveTextContent('Settings')
+    expect(title).not.toHaveTextContent('Thợ Cả')
+    expect(title).not.toHaveTextContent('Studio Lead')
   })
 })

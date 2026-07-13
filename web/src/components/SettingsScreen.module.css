@@ -10,13 +10,6 @@
   font-weight: 700;
 }
 
-/* T-BS72 fix-1 — dòng phụ mobile (đối chiếu ios-settings.png), độc lập với `.title`. Ẩn mặc định
-   (desktop): `.title` đã tự hiển thị dòng phụ gộp chung 1 hàng, không cần khối này. Chỉ bật ở
-   mobile (xem @media dưới) — display:none không ảnh hưởng layout desktop (diff pixel = 0). */
-.mobileSubline {
-  display: none;
-}
-
 .card {
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border);
@@ -174,17 +167,6 @@
 @media (max-width: 720px) {
   .title {
     display: none;
-  }
-
-  /* Dòng phụ, đối chiếu ios-settings.png: nằm ngay dưới header xanh (Sidebar mobileHeader),
-     trên card đầu tiên. QA T-BS72 FAIL vì `.title` (chứa cả dòng phụ) bị ẩn hẳn ở trên — nay
-     tách riêng, chỉ ẩn phần tiêu đề trùng header, GIỮ dòng phụ hiển thị. */
-  .mobileSubline {
-    display: block;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--color-text-secondary);
-    margin-bottom: 10px;
   }
 
   .row {
