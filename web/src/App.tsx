@@ -14,6 +14,7 @@ import { useExport, uploadExportedFile } from './hooks/useExport'
 import {
   readGateFixtureParam, buildGateFrames, buildGateExportResult, buildGateLibraryEntries,
 } from './lib/gateFixture'
+import { emitLearningEvent } from './lib/neoSteamEmbed'
 import styles from './App.module.css'
 
 // Visual Diff Gate fixture (T-BS10 AC4 / T-BS11) — xem src/lib/gateFixture.ts. Đọc 1 lần lúc
@@ -100,6 +101,24 @@ function App() {
 
       // F7 — ghi metadata vào Library (IndexedDB) sau mỗi lần export thành công
       const entryId = `film-${Date.now()}`
+
+      // T-218 — phát Learning Event (Embedded Practice App Contract §4.1). No-op tuyệt đối khi
+      // standalone hoặc chưa nhận PRACTICE_CONTEXT đã verify (xem src/lib/neoSteamEmbed.ts).
+      emitLearningEvent({
+        object: { type: 'project', id: entryId },
+        result: {
+          success: true,
+          completion: true,
+          duration: `PT${durationSeconds.toFixed(1)}S`,
+          raw: {
+            frameCount: currentFrames.length,
+            fps: FPS_VALUES[currentFps],
+            videoDurationSec: durationSeconds,
+            format: 'mp4',
+          },
+        },
+      })
+
       const entry: LibraryEntry = {
         id: entryId,
         title: `Phim của con · ${new Date().toLocaleDateString('vi-VN')}`,

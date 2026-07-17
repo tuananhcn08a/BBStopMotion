@@ -63,3 +63,33 @@ the CDN). Only offload other static files (images, JS chunks, CSS) to the CDN.
 
 No special headers needed for `npm run dev` or `npm run preview`. The Vite dev server does not
 set COOP/COEP (they were removed in T-W06).
+
+---
+
+## Embedding in Neo Steam (T-218) — use CSP `frame-ancestors`, NOT `X-Frame-Options`
+
+The production nginx config (`infra/bbstopmotion/docker/nginx-web.conf`) no longer sends
+`X-Frame-Options: DENY`. That header has no cross-origin allowlist mechanism (only
+`DENY`/`SAMEORIGIN`), so it cannot allow exactly one external origin to embed this app.
+
+Instead it sends:
+
+```
+Content-Security-Policy: frame-ancestors https://neo-steam.bapbean.com;
+```
+
+This allows embedding **only** by `https://neo-steam.bapbean.com` (the Neo Steam host web app,
+per Embedded Practice App Contract v0.1, `docs/02-architecture/contracts/embedded-practice-app-contract.md`
+in the Neo Steam `steamstudio-docs` repo). Standalone access at `bb-stopmotion.bapbean.com` is
+unaffected — this header only restricts who may put the page inside an `<iframe>`.
+
+Dev/staging: temporarily append a dev origin to the same directive if you need to test embedding
+from a local Neo Steam host build (e.g. `frame-ancestors https://neo-steam.bapbean.com
+http://localhost:5173`). Never ship a dev origin in the production directive.
+
+The client-side handshake for this embedding mode lives in `src/lib/neoSteamEmbed.ts` (protocol
+`neo-practice`, see contract §3/§4). It is a strict no-op when the app runs standalone (no parent
+iframe) — nothing here changes standalone behavior.
+
+`nginx-bb.conf` (the separate `bb-share.bapbean.com` upload/QR service) is untouched and still
+sends `X-Frame-Options: DENY` — it is not part of this embedding surface.
