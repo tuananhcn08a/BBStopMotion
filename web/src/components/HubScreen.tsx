@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { Language } from '../types'
 import { ProjectMeta } from '../lib/project/types'
 import { fpsFor } from '../lib/project/fps'
-import { getFrameBytes } from '../lib/project/db'
+import { getFrameBytes, getFrames } from '../lib/project/db'
 import { arrayBufferToObjectUrl, revokeIfObjectUrl } from '../lib/project/frameBytes'
+import { ProjectChipResult, computeProjectChip, projectDayNumber } from '../lib/project/diary'
 import { label } from '../i18n'
 import styles from './HubScreen.module.css'
 
@@ -45,8 +46,48 @@ function ProjectThumb({ project }: { project: ProjectMeta }) {
         ? <img src={thumbUrl} alt="" className={styles.thumbImg} />
         : <span aria-hidden="true">{project.kind === 'diary' ? '🌱' : '🎭'}</span>
       }
+      {/* T-XW10 — "Ngày N" (lịch, KHÔNG phải vị trí) CHỈ ở Hub, CHỈ dự án 🌱 (mirror thumbnail() iOS). */}
+      {project.kind === 'diary' && (
+        <span className={styles.thumbDay} data-testid={`hub-thumb-day-${project.id}`}>
+          N{projectDayNumber(project.createdAt)}
+        </span>
+      )}
     </div>
   )
+}
+
+/** T-XW10 AC7 — chip ĐÚNG iOS `ProjectChip` (todo/streak/done), thay placeholder "Đang làm" wave-2.
+ *  Dự án 🌱 cần `capturedAtMs` đầy đủ (không có trong `ProjectMeta` denorm) → tự `getFrames` khi
+ *  cần (mirror `ProjectStore.chip(for:)` tự `loadProject` cho diary). 🎭 không cần fetch gì thêm
+ *  (chỉ xét `exportedAt`) — tránh gọi IndexedDB thừa cho dự án không phải nhật ký. */
+function ProjectChipBadge({ language, project }: { language: Language; project: ProjectMeta }) {
+  const [chip, setChip] = useState<ProjectChipResult | null>(
+    project.kind === 'diary' ? null : computeProjectChip(project.kind, project.exportedAt, []),
+  )
+
+  useEffect(() => {
+    if (project.kind !== 'diary') {
+      setChip(computeProjectChip(project.kind, project.exportedAt, []))
+      return
+    }
+    let cancelled = false
+    getFrames(project.id).then(frames => {
+      if (cancelled) return
+      setChip(computeProjectChip('diary', project.exportedAt, frames.map(f => f.capturedAt)))
+    }).catch(() => { /* IndexedDB lỗi — không hiện chip, không chặn render card */ })
+    return () => { cancelled = true }
+  }, [project.id, project.kind, project.exportedAt])
+
+  if (!chip) return null
+
+  const chipClass = chip.kind === 'todo' ? styles.chipTodo : chip.kind === 'streak' ? styles.chipStreak : styles.chipDone
+  const text = chip.kind === 'todo'
+    ? label(language, 'hub.chipTodo').main
+    : chip.kind === 'streak'
+      ? `🔥 ${chip.streakDays} ${language === 'en' ? 'days' : 'ngày liền'}`
+      : label(language, 'hub.chipExported').main
+
+  return <span className={`${styles.chip} ${chipClass}`} data-testid={`hub-chip-${chip.kind}`}>{text}</span>
 }
 
 function projectMetaLine(language: Language, project: ProjectMeta): string {
@@ -116,7 +157,6 @@ export default function HubScreen({ language, projects, onOpenProject, onNewProj
         )}
 
         {projects.map(project => {
-          const exported = project.exportedAt !== undefined
           return (
             <div
               key={project.id}
@@ -131,9 +171,7 @@ export default function HubScreen({ language, projects, onOpenProject, onNewProj
               <div className={styles.info}>
                 <div className={styles.name}>{project.title}</div>
                 <div className={styles.meta}>{projectMetaLine(language, project)}</div>
-                <span className={`${styles.chip} ${exported ? styles.chipDone : styles.chipTodo}`}>
-                  {exported ? label(language, 'hub.chipExported').main : label(language, 'hub.chipInProgress').main}
-                </span>
+                <ProjectChipBadge language={language} project={project} />
               </div>
               <div className={styles.actions} onClick={e => e.stopPropagation()}>
                 <div className={styles.menuWrap}>

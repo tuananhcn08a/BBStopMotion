@@ -1,0 +1,62 @@
+/* T-XW10 AC5 — onion config inline 3 trạng thái (mirror iOS T-XP58/68), dùng trong dải DƯỚI của
+   HUD camera (nền tối `--color-bg-preview`, chữ/icon trắng — không nền pill riêng, đứng liền mạch
+   trên nền dải đặc, khớp ghi chú code T-XP68 "pill chỉ có nghĩa trên nền biến thiên"). */
+
+.iconBtn,
+.collapseBtn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 0;
+}
+
+.compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 4px;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.compact span[aria-hidden] {
+  font-size: 15px;
+}
+
+.pct {
+  font-size: 12px;
+  font-weight: var(--typ-weight-bold);
+  color: var(--color-text-on-dark);
+}
+
+.expanded {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.expanded .pct {
+  min-width: 30px;
+  text-align: right;
+  color: #fff;
+}
+
+.slider {
+  width: 70px;
+  height: 4px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}

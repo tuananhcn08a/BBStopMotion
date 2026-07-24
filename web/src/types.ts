@@ -58,6 +58,9 @@ export const DEFAULT_ONION_OPACITY = 0.4
 export interface AppSettings {
   goalFrames: number
   onionSkinOpacity: number // 0..1
+  /** T-XW10 (T-XP58 iOS) — nhớ opacity trước khi tắt (0), để bật lại đúng mức cũ thay vì luôn về
+   *  mặc định. Chỉ cập nhật khi `onionSkinOpacity` đổi sang giá trị >0 (xem `App.tsx updateSettings`). */
+  onionSkinLastOpacity: number
   language: Language
   soundEnabled: boolean
   autoUpload: boolean
@@ -68,6 +71,7 @@ export interface AppSettings {
 export const DEFAULT_SETTINGS: AppSettings = {
   goalFrames: DEFAULT_GOAL_FRAMES,
   onionSkinOpacity: DEFAULT_ONION_OPACITY,
+  onionSkinLastOpacity: DEFAULT_ONION_OPACITY,
   language: 'vi+en',
   soundEnabled: true,
   autoUpload: false, // F8/Q6b default chốt: auto-upload OFF trên web (xem T-BS10 card)

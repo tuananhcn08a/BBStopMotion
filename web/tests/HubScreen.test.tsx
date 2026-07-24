@@ -1,16 +1,20 @@
 /**
- * T-XW05 — S1 Hub Xưởng phim. AC1 (danh sách/empty state), AC4 (thẻ: thumbnail/thể loại/số ảnh/
- * độ dài ước tính đúng qua `fpsFor`), AC5 (menu ⋯ → xoá dự án — confirm trước khi gọi callback),
- * chip "Đang làm" vs "Đã xuất phim" (bản wave-2 tối thiểu, xem `hub.chipInProgress`/`chipExported`).
+ * T-XW05/T-XW10 — S1 Hub Xưởng phim. AC1 (danh sách/empty state), AC4 (thẻ: thumbnail/thể loại/số
+ * ảnh/độ dài ước tính đúng qua `fpsFor`), AC5 (menu ⋯ → xoá dự án — confirm trước khi gọi
+ * callback), AC7 (chip ĐÚNG iOS ProjectChip: todo/streak/done — thay placeholder "Đang làm" wave-2,
+ * "Ngày N" lịch trên thumbnail diary).
  */
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import HubScreen from '../src/components/HubScreen'
 import { ProjectMeta } from '../src/lib/project/types'
+import { ProjectFrame } from '../src/lib/project/types'
 
+const mockGetFrames = vi.fn((): Promise<ProjectFrame[]> => Promise.resolve([]))
 vi.mock('../src/lib/project/db', () => ({
   getFrameBytes: vi.fn().mockResolvedValue(undefined),
+  getFrames: () => mockGetFrames(),
 }))
 
 function makeProject(overrides: Partial<ProjectMeta> = {}): ProjectMeta {
@@ -27,6 +31,7 @@ function makeProject(overrides: Partial<ProjectMeta> = {}): ProjectMeta {
 
 afterEach(() => {
   vi.restoreAllMocks()
+  mockGetFrames.mockReset().mockResolvedValue([])
 })
 
 describe('HubScreen — AC1 danh sách + empty state', () => {
@@ -112,31 +117,91 @@ describe('HubScreen — AC4 thẻ dự án: thể loại/số ảnh/độ dài �
   })
 })
 
-describe('HubScreen — chip trạng thái (bản wave-2 tối thiểu: đã xuất vs đang làm)', () => {
-  it('chưa export (exportedAt undefined) → chip "Đang làm"', () => {
+describe('HubScreen — AC7 chip ĐÚNG iOS ProjectChip (todo/streak/done)', () => {
+  it('🎭 animation CHƯA export → KHÔNG hiện chip nào (khớp iOS, không có "Đang làm")', () => {
     render(
       <HubScreen
         language="vi+en"
-        projects={[makeProject({ exportedAt: undefined })]}
+        projects={[makeProject({ kind: 'animation', exportedAt: undefined })]}
         onOpenProject={vi.fn()}
         onNewProject={vi.fn()}
         onDeleteProject={vi.fn()}
       />
     )
-    expect(screen.getByText(/Đang làm/)).toBeInTheDocument()
+    expect(screen.queryByTestId(/^hub-chip-/)).not.toBeInTheDocument()
   })
 
-  it('đã export (exportedAt set) → chip "Đã xuất phim"', () => {
+  it('🎭 animation đã export → chip "Đã xuất phim"', () => {
     render(
       <HubScreen
         language="vi+en"
-        projects={[makeProject({ exportedAt: 1700000001000 })]}
+        projects={[makeProject({ kind: 'animation', exportedAt: 1700000001000 })]}
         onOpenProject={vi.fn()}
         onNewProject={vi.fn()}
         onDeleteProject={vi.fn()}
       />
     )
     expect(screen.getByText(/Đã xuất phim/)).toBeInTheDocument()
+  })
+
+  it('🌱 diary CHƯA chụp hôm nay → chip "📸 Hôm nay chưa chụp" (bất kể đã export trước đó)', async () => {
+    mockGetFrames.mockResolvedValue([]) // dự án mới, 0 frame → chưa chụp hôm nay
+    render(
+      <HubScreen
+        language="vi+en"
+        projects={[makeProject({ kind: 'diary', exportedAt: 1700000001000 })]}
+        onOpenProject={vi.fn()}
+        onNewProject={vi.fn()}
+        onDeleteProject={vi.fn()}
+      />
+    )
+    await waitFor(() => expect(screen.getByTestId('hub-chip-todo')).toBeInTheDocument())
+    expect(screen.getByText(/Hôm nay chưa chụp/)).toBeInTheDocument()
+  })
+
+  it('🌱 diary ĐÃ chụp hôm nay + streak>0 → chip "🔥 N ngày liền"', async () => {
+    const now = Date.now()
+    mockGetFrames.mockResolvedValue([
+      { seq: 0, file: 'frames/0001.jpg', capturedAt: now },
+    ])
+    render(
+      <HubScreen
+        language="vi+en"
+        projects={[makeProject({ kind: 'diary' })]}
+        onOpenProject={vi.fn()}
+        onNewProject={vi.fn()}
+        onDeleteProject={vi.fn()}
+      />
+    )
+    await waitFor(() => expect(screen.getByTestId('hub-chip-streak')).toBeInTheDocument())
+    expect(screen.getByText(/🔥 1 ngày liền/)).toBeInTheDocument()
+  })
+
+  it('🌱 diary — thumbnail có badge "Ngày N" (lịch, khác vị trí ảnh)', () => {
+    const createdFiveDaysAgo = Date.now() - 5 * 86400000
+    render(
+      <HubScreen
+        language="vi+en"
+        projects={[makeProject({ kind: 'diary', createdAt: createdFiveDaysAgo, id: 'proj-day' })]}
+        onOpenProject={vi.fn()}
+        onNewProject={vi.fn()}
+        onDeleteProject={vi.fn()}
+      />
+    )
+    expect(screen.getByTestId('hub-thumb-day-proj-day')).toHaveTextContent('N6')
+  })
+
+  it('🎭 animation — KHÔNG hiện badge "Ngày N" trên thumbnail', () => {
+    render(
+      <HubScreen
+        language="vi+en"
+        projects={[makeProject({ kind: 'animation', id: 'proj-anim' })]}
+        onOpenProject={vi.fn()}
+        onNewProject={vi.fn()}
+        onDeleteProject={vi.fn()}
+      />
+    )
+    expect(screen.queryByTestId('hub-thumb-day-proj-anim')).not.toBeInTheDocument()
   })
 })
 

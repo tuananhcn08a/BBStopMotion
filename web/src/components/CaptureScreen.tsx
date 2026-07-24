@@ -2,14 +2,37 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { CapturedFrame, FpsLevel, MIN_FRAMES_TO_EXPORT, FPS_KEYS, Language } from '../types'
 import { ProjectKind } from '../lib/project/types'
 import { fpsFor } from '../lib/project/fps'
+import { diaryPhotoPositionNext, diaryTodayCount, startOfDayMs } from '../lib/project/diary'
 import { label, bilingualText } from '../i18n'
 import { useCamera, CameraState } from '../hooks/useCamera'
 import { useCapture } from '../hooks/useCapture'
 import OnionSkin from './OnionSkin'
+import OnionInline from './OnionInline'
 import Filmstrip from './Filmstrip'
 import FpsSelector from './FpsSelector'
 import StepIndicator from './StepIndicator'
 import styles from './CaptureScreen.module.css'
+
+const MS_PER_DAY = 86400000
+
+/** T-XW10 AC2 — CapturedFrame dùng field `timestamp` (không phải `capturedAt` như ProjectFrame ở
+ *  data layer) nên chọn ảnh "hôm qua" tại đây thay vì tái dùng `latestFrameSeqForYesterday`
+ *  (diary.ts) — cùng thuật toán (ngày lịch liền trước, mới nhất trong ngày đó), khác shape input. */
+function findLatestFrameForYesterday(frames: CapturedFrame[], now: number = Date.now()): CapturedFrame | null {
+  const today = startOfDayMs(now)
+  const yesterday = today - MS_PER_DAY
+  let best: CapturedFrame | null = null
+  for (const frame of frames) {
+    if (startOfDayMs(frame.timestamp) === yesterday) {
+      if (!best || frame.timestamp > best.timestamp) best = frame
+    }
+  }
+  return best
+}
+
+function diaryTodayCountOf(frames: CapturedFrame[], now: number = Date.now()): number {
+  return diaryTodayCount(frames.map(f => f.timestamp), now)
+}
 
 interface Props {
   frames: CapturedFrame[]
@@ -31,6 +54,12 @@ interface Props {
   /** T-XW05 — autosave: gọi NGAY sau khi 1 frame bị xoá khỏi `frames`, kèm `seq` (=index) vừa xoá
    *  (App.tsx gọi `db.deleteFrame(projectId, seq)`). */
   onFrameDeleted?: (seq: number) => void
+  /** T-XW10 AC5 — onion inline 3 trạng thái (bản 🌱): opacity nhớ lại lúc bật sau khi tắt. */
+  onionLastOpacity?: number
+  /** T-XW10 AC5 — ghi thẳng `onionSkinOpacity` (đồng bộ 2 chiều với slider Cài đặt). */
+  onOnionOpacityChange?: (opacity: number) => void
+  /** T-XW10 AC6 — mở màn Phim nháp (S4). Ẩn nút vào nếu không truyền (vd Visual Diff Gate). */
+  onViewDraft?: () => void
   /** Visual Diff Gate only (T-BS11) — ép hiển thị 1 camera state tĩnh (denied/no-device) để
    *  chụp mockup 2d state 2, bất kể hook useCamera() thật đang ở state nào. Không set thì
    *  chạy y hệt luồng thật. Xem `src/lib/gateFixture.ts`. */
@@ -111,6 +140,7 @@ export default function CaptureScreen({
   frames, setFrames, fpsLevel, setFpsLevel, onExport,
   language, onionOpacity, onionEnabled, setOnionEnabled,
   projectKind = 'animation', onFrameCaptured, onFrameDeleted,
+  onionLastOpacity = 0.4, onOnionOpacityChange, onViewDraft,
   forcedCameraState, initialExportError = null, preferredCameraDeviceId,
 }: Props) {
   const { videoRef, state: liveCameraState, stream, devices, activeDeviceId, requestCamera, switchCamera, error } = useCamera(preferredCameraDeviceId)
@@ -118,6 +148,7 @@ export default function CaptureScreen({
   // `state` như cũ, không phân nhánh thêm, nên hành vi thật (không truyền prop) không đổi.
   const state = forcedCameraState ?? liveCameraState
   const { captureFrame, deleteFrameAt, getOnionSkinFrame } = useCapture()
+  const isDiary = projectKind === 'diary'
 
   const [isFlashing, setIsFlashing] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
@@ -245,10 +276,26 @@ export default function CaptureScreen({
     return () => window.removeEventListener('keydown', handleKey)
   }, [handleCapture, handleDeleteLast, handleTogglePreview, handleExport, isPreviewMode, setFpsLevel])
 
-  const onionSkinFrame = getOnionSkinFrame(frames)
+  // T-XW10 AC2 — diary: onion "hôm qua" = ảnh MỚI NHẤT của ngày lịch LIỀN TRƯỚC (không phải frame
+  // liền trước như 🎭). Mirror `CaptureViewModel.diaryYesterdayOnionImage`. Suy trực tiếp từ
+  // `frames` (đã có `timestamp`=capturedAt cho MỌI frame, kể cả frame resume từ IndexedDB) —
+  // không cần gọi thêm IndexedDB. `now` mặc định `Date.now()` (call-site UI, hàm thuần đã test
+  // riêng ở `diary.ts`/`tests/diary.test.ts`).
+  const diaryYesterdayFrame = isDiary ? findLatestFrameForYesterday(frames) : null
+  const onionSkinFrame = isDiary ? diaryYesterdayFrame : getOnionSkinFrame(frames)
   const fps = fpsFor(projectKind, fpsLevel)
   const estimatedSeconds = frames.length > 0 ? (frames.length / fps).toFixed(1) : '0.0'
   const previewFrame = isPreviewMode && frames[previewIndex] ? frames[previewIndex] : null
+
+  // T-XW10 AC3 — dải trên diary "🌱 Ảnh N/M" (N=M=vị trí ảnh SẮP chụp, T-XP39) + todayLine "Hôm
+  // nay: X ảnh · Phim: ~Ys".
+  const diaryPhotoPosition = diaryPhotoPositionNext(frames.length)
+  const diaryTodayN = isDiary ? diaryTodayCountOf(frames) : 0
+  // T-XP39 — "Ảnh N/M" hiện NGUYÊN 1 ngôn ngữ chính (khớp iOS `bsPrimaryText`, không nối "vi · en"
+  // như `bilingualText` — dải trên HUD hẹp, tránh vỡ dòng).
+  const diaryStatusLabel = language === 'en'
+    ? `Photo ${diaryPhotoPosition} / ${diaryPhotoPosition}`
+    : `Ảnh ${diaryPhotoPosition} / ${diaryPhotoPosition}`
 
   // Camera is ready for capture
   const cameraLive = state === 'live'
@@ -259,158 +306,219 @@ export default function CaptureScreen({
 
   return (
     <>
-      {/* Step indicator + onion toggle */}
+      {/* Step indicator + onion toggle — T-XW10: 🌱 dùng OnionInline mới (dải dưới HUD, 3 trạng
+          thái, AC5) THAY công tắc bật/tắt đơn giản này; 🎭 GIỮ NGUYÊN 100% (zero-regression, đã
+          QA-pass) cho tới khi có quyết định hợp nhất 1 control onion duy nhất cho cả 2 thể loại. */}
       <div className={styles.stepRow} data-landmark="step-indicator">
         <StepIndicator language={language} steps={['active', 'pending', 'pending']} landmarkOnSelf={false} />
         <div className={styles.stepRowSpacer} />
-        <button
-          type="button"
-          className={styles.onionToggle}
-          onClick={() => setOnionEnabled(!onionEnabled)}
-          aria-pressed={onionEnabled}
-          data-landmark="onion-toggle"
-          data-testid="onion-toggle"
-        >
-          👻 {label(language, 'onion.toggle').main}
-          <span className={`${styles.switch} ${onionEnabled ? styles.switchOn : ''}`}>
-            <span className={styles.switchKnob} />
-          </span>
-        </button>
-      </div>
-
-      {/* Camera preview */}
-      <div className={styles.previewBox} data-landmark="camera-preview">
-        {state === 'requesting' && (
-          <div className={styles.cameraPlaceholder} data-testid="camera-requesting">
-            <div className={styles.spinner} aria-label="Đang tải" />
-            <p className={styles.placeholderText}>Đang kết nối camera...</p>
-          </div>
-        )}
-
-        {state === 'denied' && (
-          <div className={styles.cameraPlaceholder} data-testid="camera-denied">
-            <CameraOffIcon />
-            <p className={styles.placeholderText}>
-              {error ?? label(language, 'states.cameraDenied').main}
-            </p>
-            <div className={styles.placeholderActions}>
-              <button
-                className={styles.retrySmall}
-                onClick={() => void requestCamera()}
-                data-testid="retry-button"
-              >
-                {label(language, 'states.retry').main}
-              </button>
-              <CameraDeviceChooser
-                devices={devices}
-                activeDeviceId={activeDeviceId}
-                onSwitch={id => void switchCamera(id)}
-                language={language}
-              />
-            </div>
-          </div>
-        )}
-
-        {state === 'no-device' && (
-          <div className={styles.cameraPlaceholder} data-testid="camera-no-device">
-            <CameraOffIcon />
-            <p className={styles.placeholderText}>
-              Không tìm thấy camera. Con thử cắm camera vào rồi bấm Thử lại nhé!
-            </p>
-            <div className={styles.placeholderActions}>
-              <button
-                className={styles.retrySmall}
-                onClick={() => void requestCamera()}
-                data-testid="retry-button"
-              >
-                {label(language, 'states.retry').main}
-              </button>
-              <CameraDeviceChooser
-                devices={devices}
-                activeDeviceId={activeDeviceId}
-                onSwitch={id => void switchCamera(id)}
-                language={language}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Video is always rendered (needed for capture); hidden unless live */}
-        <video
-          ref={videoRef as React.RefObject<HTMLVideoElement>}
-          className={`${styles.video} ${!cameraLive || isPreviewMode ? styles.hidden : ''}`}
-          autoPlay
-          playsInline
-          muted
-          aria-label="Live camera preview"
-          data-testid="camera-video"
-        />
-
-        {isPreviewMode && previewFrame && (
-          <img
-            src={previewFrame.dataUrl}
-            alt={`Xem lại frame ${previewIndex + 1}`}
-            className={styles.previewFrameImg}
-          />
-        )}
-
-        <OnionSkin
-          frame={onionSkinFrame}
-          visible={cameraLive && !isPreviewMode && onionEnabled && frames.length > 0}
-          opacity={onionOpacity}
-        />
-
-        {isFlashing && <div className={styles.flash} aria-hidden="true" data-testid="capture-flash" />}
-
-        {/* T-BS64 — nút lật camera trước/sau, mọi breakpoint (máy nhiều webcam cần cả desktop),
-            cycle vòng tròn qua switchCamera đã có sẵn trong useCamera. */}
-        {cameraLive && devices.length > 1 && (
+        {/* T-XW10 AC6 — mở S4 Phim nháp, xem được bất kỳ lúc nào kể cả 2 frame. */}
+        {onViewDraft && frames.length > 0 && (
           <button
             type="button"
-            className={styles.flipCameraBtn}
-            onClick={() => {
-              const idx = devices.findIndex(d => d.deviceId === activeDeviceId)
-              const next = devices[(idx + 1) % devices.length]
-              if (next) void switchCamera(next.deviceId)
-            }}
-            aria-label={label(language, 'camera.flip').main}
-            data-testid="flip-camera-btn"
+            className={styles.viewDraftBtn}
+            onClick={onViewDraft}
+            data-testid="view-draft-btn"
           >
-            🔄
+            👁 {label(language, 'draft.viewDraft').main}
           </button>
         )}
-
-        <div className={styles.frameCounter} data-landmark="frame-counter">
-          <div className={styles.frameNum}>{frames.length}</div>
-          <div className={styles.frameLabel}>{label(language, 'frame.counter').main} · ≈ {estimatedSeconds}s</div>
-        </div>
-
-        {cameraLive && (
-          <div className={styles.liveBadge}>
-            {isPreviewMode
-              ? <span className={styles.previewBadge}>XEMPHIM</span>
-              : <><div className={styles.liveDot} /><span>{label(language, 'live.badge').main}</span></>
-            }
-          </div>
-        )}
-
-        {cameraLive && !isPreviewMode && (
-          <div className={styles.previewHint}>
-            <span className={styles.hintDesktop}>
-              {frames.length === 0
-                ? 'Bấm Space để chụp frame đầu tiên!'
-                : <>{hintPrefix.main} <kbd>Space</kbd> {hintSuffix.main}</>
-              }
+        {!isDiary && (
+          <button
+            type="button"
+            className={styles.onionToggle}
+            onClick={() => setOnionEnabled(!onionEnabled)}
+            aria-pressed={onionEnabled}
+            data-landmark="onion-toggle"
+            data-testid="onion-toggle"
+          >
+            👻 {label(language, 'onion.toggle').main}
+            <span className={`${styles.switch} ${onionEnabled ? styles.switchOn : ''}`}>
+              <span className={styles.switchKnob} />
             </span>
-            <span className={styles.hintMobile}>
-              {frames.length === 0
-                ? label(language, 'hint.captureMobile').main
-                : label(language, 'hint.captureMobileNext').main
-              }
-            </span>
-          </div>
+          </button>
         )}
       </div>
+
+      {/* Camera preview — HUD 3 dải (T-XW10 AC1, mirror iOS CaptureHUDLayout T-XP24/68): dải
+          TRÊN/DƯỚI là SIBLING của khung live, KHÔNG bao giờ đè lên pixel camera. Khung live khoá
+          16:9 (khớp frame chuẩn hoá 1280×720, T-XW09) — chỉ chứa camera/onion/flash/placeholder,
+          tuyệt đối sạch. */}
+      <div className={styles.previewOuter} data-landmark="camera-preview">
+        <div className={styles.bandTop}>
+          <div className={styles.bandLeft}>
+            {cameraLive && (
+              isPreviewMode ? (
+                <span className={styles.previewBadge}>XEMPHIM</span>
+              ) : isDiary ? (
+                <>
+                  <span className={styles.liveDotPulse} aria-hidden="true" />
+                  <span className={styles.bandStatusText} data-testid="diary-status-text">🌱 {diaryStatusLabel}</span>
+                </>
+              ) : (
+                <>
+                  <span className={styles.liveDot} aria-hidden="true" />
+                  <span className={styles.bandStatusText}>
+                    <span>{label(language, 'live.badge').main}</span> · {frames.length} FRAME
+                  </span>
+                </>
+              )
+            )}
+          </div>
+          <div className={styles.frameCounterCompact} data-landmark="frame-counter">
+            {frames.length} <span className={styles.frameCounterUnit}>{label(language, 'frame.counter').main} · ≈ {estimatedSeconds}s</span>
+          </div>
+          {/* T-BS64 — nút lật camera trước/sau, cycle vòng tròn qua switchCamera có sẵn. Giờ SIBLING
+              trong dải trên (không còn absolute đè video, T-XW10 AC1). */}
+          {cameraLive && devices.length > 1 && (
+            <button
+              type="button"
+              className={styles.flipCameraBtnBand}
+              onClick={() => {
+                const idx = devices.findIndex(d => d.deviceId === activeDeviceId)
+                const next = devices[(idx + 1) % devices.length]
+                if (next) void switchCamera(next.deviceId)
+              }}
+              aria-label={label(language, 'camera.flip').main}
+              data-testid="flip-camera-btn"
+            >
+              🔄
+            </button>
+          )}
+        </div>
+
+        <div className={styles.liveFrame}>
+          {state === 'requesting' && (
+            <div className={styles.cameraPlaceholder} data-testid="camera-requesting">
+              <div className={styles.spinner} aria-label="Đang tải" />
+              <p className={styles.placeholderText}>Đang kết nối camera...</p>
+            </div>
+          )}
+
+          {state === 'denied' && (
+            <div className={styles.cameraPlaceholder} data-testid="camera-denied">
+              <CameraOffIcon />
+              <p className={styles.placeholderText}>
+                {error ?? label(language, 'states.cameraDenied').main}
+              </p>
+              <div className={styles.placeholderActions}>
+                <button
+                  className={styles.retrySmall}
+                  onClick={() => void requestCamera()}
+                  data-testid="retry-button"
+                >
+                  {label(language, 'states.retry').main}
+                </button>
+                <CameraDeviceChooser
+                  devices={devices}
+                  activeDeviceId={activeDeviceId}
+                  onSwitch={id => void switchCamera(id)}
+                  language={language}
+                />
+              </div>
+            </div>
+          )}
+
+          {state === 'no-device' && (
+            <div className={styles.cameraPlaceholder} data-testid="camera-no-device">
+              <CameraOffIcon />
+              <p className={styles.placeholderText}>
+                Không tìm thấy camera. Con thử cắm camera vào rồi bấm Thử lại nhé!
+              </p>
+              <div className={styles.placeholderActions}>
+                <button
+                  className={styles.retrySmall}
+                  onClick={() => void requestCamera()}
+                  data-testid="retry-button"
+                >
+                  {label(language, 'states.retry').main}
+                </button>
+                <CameraDeviceChooser
+                  devices={devices}
+                  activeDeviceId={activeDeviceId}
+                  onSwitch={id => void switchCamera(id)}
+                  language={language}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Video is always rendered (needed for capture); hidden unless live */}
+          <video
+            ref={videoRef as React.RefObject<HTMLVideoElement>}
+            className={`${styles.video} ${!cameraLive || isPreviewMode ? styles.hidden : ''}`}
+            autoPlay
+            playsInline
+            muted
+            aria-label="Live camera preview"
+            data-testid="camera-video"
+          />
+
+          {isPreviewMode && previewFrame && (
+            <img
+              src={previewFrame.dataUrl}
+              alt={`Xem lại frame ${previewIndex + 1}`}
+              className={styles.previewFrameImg}
+            />
+          )}
+
+          <OnionSkin
+            frame={onionSkinFrame}
+            visible={cameraLive && !isPreviewMode && (isDiary ? onionOpacity > 0 : onionEnabled) && !!onionSkinFrame}
+            opacity={onionOpacity}
+          />
+
+          {isFlashing && <div className={styles.flash} aria-hidden="true" data-testid="capture-flash" />}
+        </div>
+
+        <div className={styles.bandBottom}>
+          <span className={styles.hintTextBand}>
+            {cameraLive && !isPreviewMode && (
+              isDiary ? (
+                <span data-testid="diary-hint-text">
+                  {diaryYesterdayFrame
+                    ? label(language, 'diary.hintYesterday').main
+                    : label(language, 'diary.hintFirstDay').main}
+                </span>
+              ) : (
+                <>
+                  <span className={styles.hintDesktop}>
+                    {frames.length === 0
+                      ? 'Bấm Space để chụp frame đầu tiên!'
+                      : <>{hintPrefix.main} <kbd>Space</kbd> {hintSuffix.main}</>
+                    }
+                  </span>
+                  <span className={styles.hintMobile}>
+                    {frames.length === 0
+                      ? label(language, 'hint.captureMobile').main
+                      : label(language, 'hint.captureMobileNext').main
+                    }
+                  </span>
+                </>
+              )
+            )}
+          </span>
+          {isDiary && onOnionOpacityChange && (
+            <OnionInline
+              language={language}
+              opacity={onionOpacity}
+              onOpacityChange={onOnionOpacityChange}
+              lastOpacity={onionLastOpacity}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* T-XW10 AC3 — "Hôm nay: X ảnh · Phim: ~Ys" (chỉ 🌱, theo ngày lịch, TS-XP-15). */}
+      {isDiary && (
+        <div className={styles.todayLine} data-testid="diary-today-line">
+          {label(language, 'diary.today').main}{' '}
+          <b>{diaryTodayN} {label(language, 'diary.photoUnit').main}</b>
+          {' · '}
+          {label(language, 'diary.film').main}{' '}
+          <b>~{estimatedSeconds}s</b>
+        </div>
+      )}
 
       {/* Controls row */}
       <div className={styles.controlsRow}>

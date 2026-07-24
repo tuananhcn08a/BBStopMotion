@@ -173,6 +173,34 @@ export const STRINGS = {
   'sheet.nameClear': { vi: 'Xoá tên đã nhập', en: 'Clear entered name' },
   'sheet.cta': { vi: 'Bắt đầu chụp 📷', en: 'Start capturing 📷' },
   'sheet.openFile': { vi: 'Mở dự án từ file .bbsproj', en: 'Open project from file' },
+
+  // ---------- T-XW10 — HUD diary + onion inline + phim nháp S4 + chip Hub ----------
+  'hub.chipTodo': { vi: '📸 Hôm nay chưa chụp', en: '📸 Not captured today' },
+  'diary.hintYesterday': { vi: '🧅 Căn cho khớp với ảnh hôm qua', en: "🧅 Line up to match yesterday's photo" },
+  'diary.hintFirstDay': { vi: '📍 Đây là ảnh đầu tiên!', en: '📍 This is the first photo!' },
+  'diary.today': { vi: 'Hôm nay:', en: 'Today:' },
+  'diary.photoUnit': { vi: 'ảnh', en: 'photos' },
+  'diary.film': { vi: 'Phim:', en: 'Film:' },
+  'diary.flipCamera': { vi: 'Đổi camera trước/sau', en: 'Switch camera' },
+  'onion.off': { vi: 'Bật onion, ảnh mờ giúp căn khung', en: 'Turn on onion skin to help line up your shot' },
+  'onion.onCompact': { vi: 'Onion đang bật, chạm để chỉnh độ mờ', en: 'Onion skin is on, tap to adjust opacity' },
+  'onion.collapse': { vi: 'Thu gọn control onion', en: 'Collapse onion skin control' },
+  'onion.opacityLabel': { vi: 'Độ mờ onion', en: 'Onion skin opacity' },
+  'draft.title': { vi: 'Phim nháp', en: 'Draft film' },
+  'draft.empty': { vi: 'Chụp thêm vài ảnh để xem phim nháp nhé!', en: "Capture a few more photos to see your draft!" },
+  'draft.error': { vi: 'Ghép phim nháp chưa được, thử lại nhé!', en: "Couldn't build the draft — try again!" },
+  'draft.days': { vi: 'ngày', en: 'days' },
+  'draft.captureNextAnimation': { vi: 'Chụp tiếp 📷', en: 'Keep shooting 📷' },
+  'draft.captureNextTodayDiary': { vi: 'Chụp tiếp hôm nay 📷', en: 'Shoot today 📷' },
+  'draft.captureNextTomorrowDiary': { vi: 'Chụp tiếp ngày mai 📷', en: 'Shoot again tomorrow 📷' },
+  'draft.exportFull': { vi: 'Xuất phim hoàn chỉnh', en: 'Export full film' },
+  'draft.note': {
+    vi: 'Xuất phim xong dự án vẫn còn — con chụp tiếp và xuất lại bao nhiêu lần cũng được!',
+    en: 'Even after exporting, the project stays open — keep shooting and export again anytime!',
+  },
+  'draft.neutral': { vi: 'Chụp thêm để xem phim lớn dần nhé! 🌱', en: 'Keep capturing to watch your film grow! 🌱' },
+  'draft.viewDraft': { vi: 'Xem phim nháp', en: 'View draft' },
+  'draft.back': { vi: 'Quay lại', en: 'Back' },
 } satisfies Record<string, Bi>
 
 export type StringKey = keyof typeof STRINGS

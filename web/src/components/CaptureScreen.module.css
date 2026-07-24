@@ -8,6 +8,23 @@
   flex: 1;
 }
 
+/* T-XW10 AC6 — mở S4 Phim nháp. */
+.viewDraftBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-family: inherit;
+  margin-right: 8px;
+}
+
 .onionToggle {
   display: flex;
   align-items: center;
@@ -53,13 +70,136 @@
   left: 16px;
 }
 
-.previewBox {
-  position: relative;
+/* T-XW10 AC1 — HUD 3 dải (mirror iOS CaptureHUDLayout T-XP24/68): `.previewOuter` là flex COLUMN
+   chứa 3 con SIBLING — `.bandTop` (36px) / `.liveFrame` (khoá 16:9, co giãn lấp phần còn lại) /
+   `.bandBottom` (36px). Nền ĐẶC `--color-bg-preview` xuyên suốt cả 3 (liền mạch, không tách nền —
+   ghi chú T-XP68: pill/capsule mờ chỉ có nghĩa trên nền BIẾN THIÊN như ảnh camera, vô nghĩa ở đây). */
+.previewOuter {
   flex: 1;
+  min-height: 380px;
   background: var(--color-bg-preview);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+.bandTop,
+.bandBottom {
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bandLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.bandStatusText {
+  font-size: 12px;
+  font-weight: var(--typ-weight-bold);
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.liveDotPulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-success);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(33, 168, 92, 0.25);
+}
+
+.frameCounterCompact {
+  font-size: 12px;
+  font-weight: var(--typ-weight-bold);
+  color: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.frameCounterUnit {
+  font-size: 10px;
+  font-weight: var(--typ-weight-medium);
+  color: var(--color-text-on-dark-dim);
+  margin-left: 4px;
+}
+
+.flipCameraBtnBand {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: none;
+  color: #fff;
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform var(--motion-fast);
+}
+
+.flipCameraBtnBand:active {
+  transform: scale(0.92);
+}
+
+.hintTextBand {
+  font-size: 11px;
+  font-weight: var(--typ-weight-semibold);
+  color: var(--color-text-on-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+.hintTextBand kbd {
+  background: #fff;
+  color: var(--color-text-primary);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-weight: var(--typ-weight-bold);
+  font-size: 10px;
+}
+
+/* Khung live khoá 16:9 (khớp frame chuẩn hoá 1280×720, T-XW09) — CHỈ camera/onion/flash/
+   placeholder, tuyệt đối sạch (AC1). `aspect-ratio` + `max-height/width:100%` để khung tự co vừa
+   trong phần còn lại của `.previewOuter` (sau khi trừ 2×36px dải) mà KHÔNG tràn ra ngoài. */
+.liveFrame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.todayLine {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.todayLine b {
+  color: var(--color-text-primary);
+  font-weight: var(--typ-weight-semibold);
 }
 
 .video {
@@ -190,22 +330,8 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-.liveBadge {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--color-bg-preview-overlay);
-  border-radius: var(--radius-full);
-  padding: 7px 14px;
-  color: #fff;
-  font-weight: var(--typ-weight-bold);
-  font-size: 13px;
-  letter-spacing: 0.06em;
-}
-
+/* T-XW10 — `.liveDot`/`.previewBadge` giờ SỐNG trong `.bandTop` (sibling, xem `.bandLeft` +
+   `.bandStatusText` ở trên) thay vì absolute overlay `.liveBadge` cũ (đã xoá). */
 .liveDot {
   width: 8px;
   height: 8px;
@@ -215,81 +341,12 @@
 
 .previewBadge {
   color: var(--color-text-on-dark);
-}
-
-.frameCounter {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  background: var(--color-bg-preview-overlay);
-  border-radius: 14px;
-  padding: 10px 16px;
-  text-align: center;
-  color: #fff;
-}
-
-.frameNum {
-  font-size: var(--typ-counter);
-  font-weight: var(--typ-weight-semibold);
-  line-height: 1;
-}
-
-.frameLabel {
-  font-size: 10px;
-  font-weight: var(--typ-weight-bold);
-  letter-spacing: var(--typ-ls-caps-dark);
-  color: var(--color-text-on-dark-dim);
-}
-
-.previewHint {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--color-bg-preview-overlay);
-  color: var(--color-text-on-dark);
-  border-radius: var(--radius-full);
-  padding: 8px 18px;
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.previewHint kbd {
-  background: #fff;
-  color: var(--color-text-primary);
-  border-radius: 6px;
-  padding: 1px 8px;
-  font-weight: var(--typ-weight-bold);
   font-size: 12px;
+  font-weight: var(--typ-weight-bold);
 }
 
 .hintMobile {
   display: none;
-}
-
-/* T-BS64 — nút lật camera trước/sau, đáy khung preview, không đụng frameCounter (top-right)
-   hay previewHint (bottom-center). Mọi breakpoint (máy nhiều webcam cần cả desktop). */
-.flipCameraBtn {
-  position: absolute;
-  bottom: 14px;
-  right: 14px;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-full);
-  border: none;
-  background: var(--color-bg-preview-overlay);
-  color: #fff;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform var(--motion-fast);
-}
-
-.flipCameraBtn:active {
-  transform: scale(0.92);
 }
 
 .flash {
@@ -503,8 +560,14 @@
   .hintDesktop { display: none; }
   .hintMobile { display: inline; }
 
-  .previewBox {
+  .previewOuter {
     order: 0;
+  }
+
+  /* T-XW10 — todayLine (chỉ 🌱) đi NGAY sau preview, trước filmstrip (order 0.5 tương đương —
+     dùng số nguyên liền kề vì CSS order không cho thập phân theo quy ước codebase này). */
+  .todayLine {
+    order: 1;
   }
 
   .controlsRow {

@@ -15,6 +15,7 @@ import WelcomeScreen from './components/WelcomeScreen'
 import HubScreen from './components/HubScreen'
 import NewProjectSheet from './components/NewProjectSheet'
 import CaptureScreen from './components/CaptureScreen'
+import DraftFilmScreen from './components/DraftFilmScreen'
 import ExportProgress from './components/ExportProgress'
 import SuccessScreen from './components/SuccessScreen'
 import LibraryScreen from './components/LibraryScreen'
@@ -66,6 +67,9 @@ function App() {
     return 'hub'
   })
   const [onionEnabled, setOnionEnabled] = useState(true)
+  // T-XW10 AC6 — S4 Phim nháp: panel con của Capture (KHÔNG phải Screen/AppState riêng — không
+  // đổi routing chính, chỉ che Capture tạm thời, "Chụp tiếp" đóng lại y hệt trước khi mở).
+  const [showDraft, setShowDraft] = useState(false)
 
   // ---------- T-XW05 — Hub đa dự án + resume (bind Capture vào 1 project) ----------
   const [hubProjects, setHubProjects] = useState<ProjectMeta[]>([])
@@ -141,8 +145,17 @@ function App() {
     }
   }, [])
 
+  // T-XW10 (T-XP58) — bất cứ đâu đổi onionSkinOpacity sang giá trị >0 (Settings slider HOẶC
+  // OnionInline mới trong CaptureScreen) đều tự cập nhật onionSkinLastOpacity, để bật lại onion
+  // sau khi tắt (0) khôi phục đúng mức cũ thay vì luôn về mặc định.
   const updateSettings = useCallback((patch: Partial<AppSettings>) => {
-    setSettings(prev => ({ ...prev, ...patch }))
+    setSettings(prev => {
+      const next = { ...prev, ...patch }
+      if (patch.onionSkinOpacity !== undefined && patch.onionSkinOpacity > 0) {
+        next.onionSkinLastOpacity = patch.onionSkinOpacity
+      }
+      return next
+    })
   }, [])
 
   // F5 — nav khoá khi đang export (TS-BS-15)
@@ -190,6 +203,7 @@ function App() {
       setExportResult(null)
       setExportError(null)
       setAppState('CAPTURING')
+      setShowDraft(false)
       setScreen('capture')
     } catch {
       // IndexedDB lỗi (quota/private mode/dự án hỏng) — ở lại Hub, không crash app.
@@ -210,6 +224,7 @@ function App() {
       setExportResult(null)
       setExportError(null)
       setAppState('CAPTURING')
+      setShowDraft(false)
       setShowNewProjectSheet(false)
       setScreen('capture')
     } catch {
@@ -399,7 +414,7 @@ function App() {
             onDeleteProject={handleDeleteProject}
           />
         )}
-        {screen === 'capture' && appState === 'CAPTURING' && (
+        {screen === 'capture' && appState === 'CAPTURING' && !showDraft && (
           <CaptureScreen
             frames={frames}
             setFrames={setFrames}
@@ -410,12 +425,27 @@ function App() {
             onionOpacity={settings.onionSkinOpacity}
             onionEnabled={onionEnabled}
             setOnionEnabled={setOnionEnabled}
+            onionLastOpacity={settings.onionSkinLastOpacity}
+            onOnionOpacityChange={(opacity) => updateSettings({ onionSkinOpacity: opacity })}
             projectKind={currentProjectKind}
             onFrameCaptured={handleFrameCaptured}
             onFrameDeleted={handleFrameDeleted}
+            onViewDraft={currentProjectId ? () => setShowDraft(true) : undefined}
             preferredCameraDeviceId={settings.cameraDeviceId}
             forcedCameraState={GATE_FIXTURE === 'denied' ? 'denied' : undefined}
             initialExportError={GATE_FIXTURE === 'disabled' ? label(settings.language, 'states.minFrames').main : null}
+          />
+        )}
+        {/* T-XW10 AC6 — S4 Phim nháp: panel con của Capture, xem BẤT KỲ LÚC NÀO (kể cả 2 frame). */}
+        {screen === 'capture' && appState === 'CAPTURING' && showDraft && (
+          <DraftFilmScreen
+            language={settings.language}
+            projectTitle={currentProjectTitle || 'Phim của con'}
+            projectKind={currentProjectKind}
+            frames={frames}
+            fpsLevel={fpsLevel}
+            onBack={() => setShowDraft(false)}
+            onExportFull={() => { setShowDraft(false); void handleExport(frames, fpsLevel) }}
           />
         )}
         {screen === 'capture' && appState === 'EXPORTING' && (

@@ -44,7 +44,9 @@ export default function Filmstrip({ frames, selectedIndex, language, onDeleteFra
             data-testid={`thumb-${i}`}
           >
             <img src={frame.dataUrl} alt={`Frame ${i + 1}`} className={styles.thumbImg} />
-            <span className={styles.thumbNum}>{i + 1}</span>
+            {/* T-XW10 AC4 — badge vị trí "N{số}" (khớp iOS DiaryFilmstripiOS/FilmstripiOS
+                positionLabel) — filmstrip vốn ĐÃ phẳng (không nhóm ngày), chỉ đổi format nhãn. */}
+            <span className={styles.thumbNum}>N{i + 1}</span>
             {!disabled && (
               <>
                 <span className={styles.thumbOutline} aria-hidden="true" />
