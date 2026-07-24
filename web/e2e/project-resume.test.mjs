@@ -129,6 +129,47 @@ try {
   report('C1-captured-n-frames', capturedCount === FRAME_COUNT, `expected=${FRAME_COUNT} actual=${capturedCount}`)
   await page.screenshot({ path: path.join(SHOT_DIR, 'resume-C-captured.png') })
 
+  // T-XW09 — verify frame đã normalize NGAY LÚC CHỤP: đọc bytes THẬT từ IndexedDB (bỏ qua tầng
+  // app, đọc thẳng record 'frames'), decode qua createImageBitmap (Chrome thật, không mock) để đo
+  // kích thước pixel THẬT + kiểm magic bytes JPEG (FF D8 FF).
+  const normalizeCheck = await page.evaluate(() => new Promise((resolve, reject) => {
+    const req = indexedDB.open('bbstopmotion-library')
+    req.onsuccess = () => {
+      const db = req.result
+      const tx = db.transaction('frames', 'readonly')
+      const getAllReq = tx.objectStore('frames').getAll()
+      getAllReq.onsuccess = async () => {
+        const records = getAllReq.result
+        if (records.length === 0) { resolve({ ok: false, reason: 'no frame records in IndexedDB' }); return }
+        const first = records[0]
+        const bytes = new Uint8Array(first.bytes)
+        const magicOk = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
+        try {
+          const blob = new Blob([first.bytes], { type: 'image/jpeg' })
+          const bitmap = await createImageBitmap(blob)
+          resolve({
+            ok: true,
+            recordCount: records.length,
+            byteLength: first.bytes.byteLength,
+            magicOk,
+            width: bitmap.width,
+            height: bitmap.height,
+          })
+        } catch (e) {
+          resolve({ ok: false, reason: 'createImageBitmap failed: ' + e.message })
+        }
+      }
+      getAllReq.onerror = () => reject(getAllReq.error)
+    }
+    req.onerror = () => reject(req.error)
+  }))
+  console.log('[T-XW09] Frame thực đo:', JSON.stringify(normalizeCheck))
+  report(
+    'C2-frame-normalized-1280x720-jpeg',
+    normalizeCheck.ok && normalizeCheck.magicOk && normalizeCheck.width === 1280 && normalizeCheck.height === 720,
+    JSON.stringify(normalizeCheck),
+  )
+
   // Đọc project id đang mở để dùng lại testid sau reload (Hub liệt kê nhiều card nếu có).
   // Lấy qua URL không có — id chỉ tồn tại trong React state, nên dò card DUY NHẤT sau reload thay.
 

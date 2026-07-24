@@ -39,6 +39,80 @@ describe('useCapture', () => {
     expect(typeof frame?.timestamp).toBe('number')
   })
 
+  // T-XW09 AC1/AC2 — normalize lúc chụp: canvas cố định 1280×720, drawImage crop-fill đúng vùng
+  // nguồn, toDataURL đúng mime/quality khớp iOS ImageNormalizer (1280×720 q0.85 JPEG).
+  it('T-XW09 AC1: canvas tạo ra kích thước CỐ ĐỊNH 1280×720 (không theo video.videoWidth/Height)', () => {
+    const { result } = renderHook(() => useCapture())
+
+    const mockCtx = { drawImage: vi.fn() }
+    const mockCanvas = {
+      getContext: vi.fn().mockReturnValue(mockCtx),
+      toDataURL: vi.fn().mockReturnValue('data:image/jpeg;base64,test'),
+      width: 0,
+      height: 0,
+    }
+    vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+      if (tag === 'canvas') return mockCanvas as unknown as HTMLElement
+      return document.createElement(tag)
+    })
+
+    // Camera 4:3 khác 16:9 (webcam phổ biến) — canvas output PHẢI vẫn đúng 1280×720 cố định.
+    const mockVideo = { videoWidth: 640, videoHeight: 480 } as HTMLVideoElement
+    result.current.captureFrame(mockVideo)
+
+    expect(mockCanvas.width).toBe(1280)
+    expect(mockCanvas.height).toBe(720)
+  })
+
+  it('T-XW09 AC1: toDataURL gọi đúng mime "image/jpeg" + quality 0.85 (khớp ImageNormalizer q0.85)', () => {
+    const { result } = renderHook(() => useCapture())
+
+    const mockCtx = { drawImage: vi.fn() }
+    const mockCanvas = {
+      getContext: vi.fn().mockReturnValue(mockCtx),
+      toDataURL: vi.fn().mockReturnValue('data:image/jpeg;base64,test'),
+      width: 0,
+      height: 0,
+    }
+    vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+      if (tag === 'canvas') return mockCanvas as unknown as HTMLElement
+      return document.createElement(tag)
+    })
+
+    const mockVideo = { videoWidth: 1920, videoHeight: 1080 } as HTMLVideoElement
+    result.current.captureFrame(mockVideo)
+
+    expect(mockCanvas.toDataURL).toHaveBeenCalledWith('image/jpeg', 0.85)
+  })
+
+  it('T-XW09 AC2: camera 4:3 (640×480) → drawImage crop-fill trên/dưới (giữ chiều rộng, margin đối xứng) vẽ FULL canvas 1280×720', () => {
+    const { result } = renderHook(() => useCapture())
+
+    const mockCtx = { drawImage: vi.fn() }
+    const mockCanvas = {
+      getContext: vi.fn().mockReturnValue(mockCtx),
+      toDataURL: vi.fn().mockReturnValue('data:image/jpeg;base64,test'),
+      width: 0,
+      height: 0,
+    }
+    vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+      if (tag === 'canvas') return mockCanvas as unknown as HTMLElement
+      return document.createElement(tag)
+    })
+
+    const mockVideo = { videoWidth: 640, videoHeight: 480 } as HTMLVideoElement
+    result.current.captureFrame(mockVideo)
+
+    // 9-arg drawImage(source, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight) — dst LUÔN full
+    // canvas 0,0,1280,720 (AC1); src crop tính bởi computeCropFillSourceRect (AC2, test riêng
+    // imageNormalize.test.ts) — sHeight=360 (640/(16/9)), sy=60 (margin đối xứng (480-360)/2).
+    expect(mockCtx.drawImage).toHaveBeenCalledWith(
+      mockVideo,
+      0, 60, 640, 360,
+      0, 0, 1280, 720,
+    )
+  })
+
   it('TS-02: captureFrame returns null if video has no dimensions', () => {
     const { result } = renderHook(() => useCapture())
     const mockVideo = { videoWidth: 0, videoHeight: 0 } as HTMLVideoElement

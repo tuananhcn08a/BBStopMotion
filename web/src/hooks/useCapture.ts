@@ -1,5 +1,8 @@
 import { useCallback, useRef } from 'react'
 import { CapturedFrame } from '../types'
+import {
+  NORMALIZED_HEIGHT, NORMALIZED_MIME, NORMALIZED_QUALITY, NORMALIZED_WIDTH, computeCropFillSourceRect,
+} from '../lib/project/imageNormalize'
 
 export interface UseCaptureReturn {
   captureFrame: (video: HTMLVideoElement) => CapturedFrame | null
@@ -11,22 +14,33 @@ export interface UseCaptureReturn {
 export function useCapture(): UseCaptureReturn {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
-  const getCanvas = useCallback((width: number, height: number): HTMLCanvasElement => {
+  // T-XW09 — canvas kích thước CỐ ĐỊNH 1280×720 (KHÔNG nhân devicePixelRatio), tạo 1 lần và tái
+  // dùng cho mọi frame (không còn resize theo video.videoWidth/Height mỗi lần chụp như trước).
+  const getCanvas = useCallback((): HTMLCanvasElement => {
     if (!canvasRef.current) {
       canvasRef.current = document.createElement('canvas')
+      canvasRef.current.width = NORMALIZED_WIDTH
+      canvasRef.current.height = NORMALIZED_HEIGHT
     }
-    canvasRef.current.width = width
-    canvasRef.current.height = height
     return canvasRef.current
   }, [])
 
+  // T-XW09 AC1/AC2 — normalize NGAY LÚC CHỤP: crop-fill khung camera hiện tại (giữ tỉ lệ, không
+  // méo, không viền đen — `computeCropFillSourceRect`) vào canvas cố định 1280×720, encode JPEG
+  // q0.85 MỘT LẦN duy nhất. Frame lưu xuống IndexedDB (qua `db.addFrame`, App.tsx) và export
+  // (ffmpeg.wasm, `useExport.ts`) dùng THẲNG bytes này — không re-encode/downscale lần nữa (AC3).
   const captureFrame = useCallback((video: HTMLVideoElement): CapturedFrame | null => {
     if (!video || video.videoWidth === 0 || video.videoHeight === 0) return null
-    const canvas = getCanvas(video.videoWidth, video.videoHeight)
+    const canvas = getCanvas()
     const ctx = canvas.getContext('2d')
     if (!ctx) return null
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+    const src = computeCropFillSourceRect(video.videoWidth, video.videoHeight, NORMALIZED_WIDTH, NORMALIZED_HEIGHT)
+    ctx.drawImage(
+      video,
+      src.sx, src.sy, src.sWidth, src.sHeight,
+      0, 0, NORMALIZED_WIDTH, NORMALIZED_HEIGHT,
+    )
+    const dataUrl = canvas.toDataURL(NORMALIZED_MIME, NORMALIZED_QUALITY)
     return {
       id: `frame-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       dataUrl,
