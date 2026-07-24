@@ -463,3 +463,59 @@ export function commitFrameOrder(projectId: string, keptSeqsInOrder: number[]): 
       }),
   )
 }
+
+/**
+ * T-XW21 — ghi 1 dự án ĐÃ VALIDATE xong (`bbsprojArchive.ts parseBbsproj*`) vào IndexedDB, mirror
+ * `ProjectStore.writeImportedProject` iOS. Dùng CHUNG cho cả 3 nhánh Ghi đè/Nhân bản/Không trùng —
+ * call-site (`bbsprojArchive.ts commitParsedImport`) đã quyết `project.id` cuối cùng TRƯỚC khi gọi
+ * hàm này (nhân bản đã đổi sang `newProjectId()`), nên ở đây chỉ còn 1 việc: XOÁ SẠCH frame cũ (nếu
+ * `id` này đã tồn tại — chính là trường hợp Ghi đè; no-op an toàn nếu chưa có) rồi ghi frame MỚI +
+ * record project, trong CÙNG 1 transaction (không lệch nếu tab đóng giữa chừng).
+ */
+export function writeImportedProject(project: Project, frameBytesBySeq: Map<number, ArrayBuffer>): Promise<void> {
+  return openAppDb().then(
+    db =>
+      new Promise<void>((resolve, reject) => {
+        const tx = db.transaction([STORE_PROJECTS, STORE_FRAMES], 'readwrite')
+        const projectsStore = tx.objectStore(STORE_PROJECTS)
+        const framesStore = tx.objectStore(STORE_FRAMES)
+        const idx = framesStore.index(FRAMES_BY_PROJECT_INDEX)
+
+        // Xoá TOÀN BỘ frame cũ của id này (Ghi đè) — no-op nếu id chưa từng tồn tại.
+        const cursorReq = idx.openCursor(IDBKeyRange.only(project.id))
+        cursorReq.onsuccess = () => {
+          const cursor = cursorReq.result
+          if (cursor) {
+            cursor.delete()
+            cursor.continue()
+            return
+          }
+
+          // Xoá xong (hoặc chưa từng có gì) — ghi frame MỚI theo đúng nội dung file nhập.
+          for (const frame of project.frames) {
+            const bytes = frameBytesBySeq.get(frame.seq)
+            if (!bytes) continue // đã validate đủ ở tầng parse — không xảy ra trên luồng thật
+            framesStore.put({ projectId: project.id, seq: frame.seq, file: frame.file, capturedAt: frame.capturedAt, bytes })
+          }
+
+          const record: ProjectRecord = {
+            schemaVersion: CURRENT_SCHEMA_VERSION,
+            id: project.id,
+            title: project.title,
+            kind: project.kind,
+            fpsLevel: project.fpsLevel,
+            createdAt: project.createdAt,
+            frameCount: project.frames.length,
+          }
+          if (project.lastCapturedAt !== undefined) record.lastCapturedAt = project.lastCapturedAt
+          if (project.exportedAt !== undefined) record.exportedAt = project.exportedAt
+          if (project.frames.length > 0) record.coverFrameSeq = project.frames.length - 1
+          projectsStore.put(record)
+        }
+        cursorReq.onerror = () => reject(cursorReq.error ?? new Error('writeImportedProject cursor failed'))
+
+        tx.oncomplete = () => resolve()
+        tx.onerror = () => reject(tx.error ?? new Error('writeImportedProject failed'))
+      }),
+  )
+}

@@ -184,6 +184,31 @@
   opacity: 0.7;
 }
 
+/* T-XW21 — nút thật (thay hint disabled T-XW05) mở picker file `.bbsproj`. */
+.openFileBtn {
+  min-height: var(--hit-target-min);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: var(--typ-weight-semibold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.openFileInputHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
 @media (max-width: 720px) {
   .backdrop {
     align-items: flex-end;

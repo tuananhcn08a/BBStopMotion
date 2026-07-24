@@ -263,3 +263,41 @@ describe('HubScreen — AC5 menu ⋯ → xoá dự án (confirm trước khi g�
     expect(onOpenProject).not.toHaveBeenCalled()
   })
 })
+
+describe('HubScreen — T-XW21 menu "⋯" → "Chuyển máy / Sao lưu" (S6 entry point)', () => {
+  it('không truyền onTransferProject (vd test/gate cũ) → KHÔNG hiện mục menu này, không throw', async () => {
+    const user = userEvent.setup()
+    render(
+      <HubScreen
+        language="vi+en"
+        projects={[makeProject({ id: 'proj-1' })]}
+        onOpenProject={vi.fn()}
+        onNewProject={vi.fn()}
+        onDeleteProject={vi.fn()}
+      />
+    )
+    await user.click(screen.getByTestId('hub-project-menu-proj-1'))
+    expect(screen.queryByTestId('hub-project-transfer-proj-1')).toBeNull()
+  })
+
+  it('có onTransferProject → bấm ⋯ rồi "Chuyển máy / Sao lưu" → gọi onTransferProject(project) đúng, đóng menu', async () => {
+    const onTransferProject = vi.fn()
+    const user = userEvent.setup()
+    const project = makeProject({ id: 'proj-t', title: 'Cây đậu của Bin' })
+    render(
+      <HubScreen
+        language="vi+en"
+        projects={[project]}
+        onOpenProject={vi.fn()}
+        onNewProject={vi.fn()}
+        onDeleteProject={vi.fn()}
+        onTransferProject={onTransferProject}
+      />
+    )
+    await user.click(screen.getByTestId('hub-project-menu-proj-t'))
+    await user.click(screen.getByTestId('hub-project-transfer-proj-t'))
+
+    expect(onTransferProject).toHaveBeenCalledWith(project)
+    expect(screen.queryByTestId('hub-project-transfer-proj-t')).toBeNull() // menu đã đóng
+  })
+})

@@ -86,6 +86,13 @@ try {
   const reachedCapture = await page.evaluate(() => !!document.querySelector('[data-landmark="capture-btn"]'))
   report('A-create-diary-project-reaches-capture', reachedCapture)
 
+  // T-XW21 — S5 "Giới thiệu app iOS" giờ tự hiện NGAY sau khi tạo dự án 🌱 Nhật ký ĐẦU TIÊN (phủ
+  // toàn màn hình) — PHẢI đóng trước khi thao tác HUD bên dưới, nếu không mọi click sau đó (vd
+  // "onion-inline-compact") sẽ trúng nhầm overlay này thay vì control HUD thật.
+  await page.waitForSelector('[data-testid="app-intro-screen"]', { timeout: 5000 }).catch(() => {})
+  await page.click('[data-testid="app-intro-later-btn"]').catch(() => {})
+  await sleep(200)
+
   const camReady = await waitCameraReady(page)
   report('A1-camera-ready', camReady)
 
@@ -175,7 +182,11 @@ try {
     await mPage.click('[data-testid="new-project-type-diary"]')
     await sleep(200)
     await mPage.click('[data-testid="new-project-cta"]')
-    await sleep(500)
+    // T-XW21 — đóng S5 nudge tự động (dự án Nhật ký đầu) trước khi chụp ảnh HUD, để screenshot
+    // "diary-hud" vẫn đúng nội dung HUD (không phải màn giới thiệu app iPhone che mất).
+    await mPage.waitForSelector('[data-testid="app-intro-screen"]', { timeout: 5000 }).catch(() => {})
+    await mPage.click('[data-testid="app-intro-later-btn"]').catch(() => {})
+    await sleep(300)
     await waitCameraReady(mPage, 10000)
     await sleep(300)
     const mobileHud = await mPage.evaluate(() => !!document.querySelector('[data-testid="diary-status-text"]'))

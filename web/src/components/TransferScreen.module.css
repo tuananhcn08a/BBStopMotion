@@ -1,0 +1,232 @@
+/* T-XW21 (S6) — mirror mockup wave-6/mockup-ios-intro-transfer.html §2. Cấu trúc GIỐNG HỆT
+   desktop/mobile (khác S5) — chỉ media query đổi backdrop/sheet giống NewProjectSheet. */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 30, 51, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.sheet {
+  width: 440px;
+  max-width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+  padding: 22px 24px 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.grabber {
+  display: none;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: var(--typ-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.title small {
+  display: block;
+  font-size: var(--typ-caption);
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.syncDiagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--color-bg-tint);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+}
+
+.syncNode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.syncNode .ico {
+  font-size: 30px;
+}
+
+.syncNode span {
+  font-size: var(--typ-micro);
+  font-weight: 600;
+  color: var(--color-primary-deep);
+}
+
+.syncArrow {
+  font-size: 20px;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+.optCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-bg-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 14px;
+  min-height: var(--hit-target-min);
+  text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.optCard:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.optCard .ico {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-tint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.optCard b {
+  display: block;
+  font-size: var(--typ-body-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.optCard span {
+  font-size: var(--typ-caption);
+  color: var(--color-text-secondary);
+}
+
+.optCard .file {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+}
+
+.growCard {
+  background: var(--color-success-surface);
+  border: 1px solid var(--color-success-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: var(--typ-caption);
+  color: var(--color-text-primary);
+  line-height: 1.55;
+}
+
+.errorNote {
+  background: var(--color-error-surface);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: var(--typ-caption);
+  color: var(--color-error-deep);
+  line-height: 1.55;
+}
+
+.statusNote {
+  font-size: var(--typ-caption);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.duplicateBox {
+  background: var(--color-warn-surface);
+  border: 1px solid var(--color-warn-border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.duplicateBox b {
+  font-size: var(--typ-body);
+  color: var(--color-text-primary);
+}
+
+.duplicateBox p {
+  margin: 0;
+  font-size: var(--typ-caption);
+  color: var(--color-text-secondary);
+}
+
+.duplicateActions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ctaGhost {
+  min-height: var(--hit-target-min);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-surface);
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: var(--typ-body);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.hiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+@media (max-width: 720px) {
+  .backdrop {
+    align-items: flex-end;
+    padding: 0;
+    z-index: 200;
+  }
+
+  .sheet {
+    width: 100%;
+    max-height: 88vh;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    padding: 10px 18px 20px;
+  }
+
+  .grabber {
+    display: block;
+    width: 40px;
+    height: 4px;
+    border-radius: var(--radius-full);
+    background: var(--color-border-dashed);
+    margin: 0 auto 4px;
+  }
+}

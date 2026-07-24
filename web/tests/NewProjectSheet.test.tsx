@@ -5,7 +5,7 @@
  * Nhật ký, đóng qua backdrop.
  */
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import NewProjectSheet from '../src/components/NewProjectSheet'
 
@@ -120,10 +120,48 @@ describe('NewProjectSheet — đóng sheet', () => {
   })
 })
 
-describe('NewProjectSheet — "Mở dự án từ file" (wave-6, hiện nhưng vô hiệu)', () => {
-  it('hiện hint, KHÔNG phải nút bấm được (aria-disabled)', () => {
+describe('NewProjectSheet — "Mở dự án từ file" (T-XW21 — nút thật, thay hint disabled T-XW05)', () => {
+  it('không truyền onImportFile (vd Visual Diff Gate) → KHÔNG render hàng này', () => {
     render(<NewProjectSheet language="vi+en" onCreate={vi.fn()} onClose={vi.fn()} />)
+    expect(screen.queryByTestId('new-project-open-file')).toBeNull()
+  })
+
+  it('có onImportFile → hiện nút bấm được (không còn aria-disabled)', () => {
+    render(<NewProjectSheet language="vi+en" onCreate={vi.fn()} onClose={vi.fn()} onImportFile={vi.fn()} />)
     const openFile = screen.getByTestId('new-project-open-file')
-    expect(openFile).toHaveAttribute('aria-disabled', 'true')
+    expect(openFile).not.toHaveAttribute('aria-disabled')
+    expect(openFile.tagName).toBe('BUTTON')
+  })
+
+  it('bấm nút → kích hoạt input file ẩn (mở picker OS)', () => {
+    render(<NewProjectSheet language="vi+en" onCreate={vi.fn()} onClose={vi.fn()} onImportFile={vi.fn()} />)
+    const input = screen.getByTestId('new-project-open-file-input') as HTMLInputElement
+    const clickSpy = vi.spyOn(input, 'click')
+    fireEvent.click(screen.getByTestId('new-project-open-file'))
+    expect(clickSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('chọn file .bbsproj → gọi onImportFile(file) đúng', () => {
+    const onImportFile = vi.fn()
+    render(<NewProjectSheet language="vi+en" onCreate={vi.fn()} onClose={vi.fn()} onImportFile={onImportFile} />)
+    const input = screen.getByTestId('new-project-open-file-input') as HTMLInputElement
+    const file = new File(['zip-bytes'], 'cay-dau-cua-bin.bbsproj')
+    Object.defineProperty(input, 'files', { value: [file], writable: false, configurable: true })
+
+    fireEvent.change(input)
+
+    expect(onImportFile).toHaveBeenCalledTimes(1)
+    expect(onImportFile).toHaveBeenCalledWith(file)
+  })
+
+  it('Huỷ picker (không chọn file) → KHÔNG gọi onImportFile', () => {
+    const onImportFile = vi.fn()
+    render(<NewProjectSheet language="vi+en" onCreate={vi.fn()} onClose={vi.fn()} onImportFile={onImportFile} />)
+    const input = screen.getByTestId('new-project-open-file-input') as HTMLInputElement
+    Object.defineProperty(input, 'files', { value: [], writable: false, configurable: true })
+
+    fireEvent.change(input)
+
+    expect(onImportFile).not.toHaveBeenCalled()
   })
 })

@@ -14,6 +14,8 @@ import {
   listLibraryEntries, saveLibraryVideoBlob, updateLibraryEntry,
 } from './lib/libraryDb'
 import { generatePosterFromBlob } from './lib/project/posterGen'
+import { DuplicateResolution, commitParsedImport, parseBbsprojFile } from './lib/project/bbsprojArchive'
+import { BBSPROJ_ERROR_LABEL_KEY } from './lib/project/bbsprojErrorLabel'
 import { label } from './i18n'
 import Sidebar from './components/Sidebar'
 import WelcomeScreen from './components/WelcomeScreen'
@@ -25,6 +27,8 @@ import ExportProgress from './components/ExportProgress'
 import SuccessScreen from './components/SuccessScreen'
 import LibraryScreen from './components/LibraryScreen'
 import SettingsScreen from './components/SettingsScreen'
+import AppIntroScreen from './components/AppIntroScreen'
+import TransferScreen from './components/TransferScreen'
 import { useExport, uploadExportedFile } from './hooks/useExport'
 import {
   readGateFixtureParam, buildGateFrames, buildGateExportResult, buildGateLibraryEntries,
@@ -59,6 +63,27 @@ function writeWelcomeSeen(): void {
   }
 }
 
+// T-XW21 S5 — "Để sau" ghi nhớ 1 lần, KHÔNG hiện lại kể cả phiên sau (mockup T-XW18 quyết định
+// #11) — CHỈ ảnh hưởng nudge TỰ ĐỘNG (điểm vào (a) sau khi tạo dự án Nhật ký đầu); Cài đặt (điểm
+// vào (b)) luôn mở lại được bất kể cờ này.
+const APP_INTRO_SEEN_KEY = 'bbstopmotion-app-intro-seen'
+
+function readAppIntroSeen(): boolean {
+  try {
+    return localStorage.getItem(APP_INTRO_SEEN_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeAppIntroSeen(): void {
+  try {
+    localStorage.setItem(APP_INTRO_SEEN_KEY, '1')
+  } catch {
+    // localStorage không khả dụng — bỏ qua (nudge có thể hiện lại lần sau, không crash)
+  }
+}
+
 function App() {
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings())
   // F6 — Welcome chỉ hiện lần đầu: gate fixture LUÔN bỏ qua (bench visual diff không cần Welcome);
@@ -84,6 +109,10 @@ function App() {
   const [currentProjectTitle, setCurrentProjectTitle] = useState<string>('')
   // Object URL của các frame đã resume từ IndexedDB — thu hồi khi rời dự án (tránh rò rỉ bộ nhớ).
   const frameObjectUrlsRef = useRef<string[]>([])
+
+  // ---------- T-XW21 — S5 giới thiệu app iOS + S6 Chuyển máy & sao lưu ----------
+  const [showAppIntro, setShowAppIntro] = useState(false)
+  const [transferProject, setTransferProject] = useState<ProjectMeta | null>(null)
 
   const [appState, setAppState] = useState<AppState>(() => {
     if (GATE_FIXTURE === 'success') return 'SUCCESS'
@@ -232,10 +261,53 @@ function App() {
       setShowDraft(false)
       setShowNewProjectSheet(false)
       setScreen('capture')
+
+      // T-XW21 S5 — nudge TỰ ĐỘNG ngay sau khi tạo dự án 🌱 Nhật ký (điểm vào (a), mockup T-XW18
+      // quyết định #11) — CHỈ khi chưa từng "Để sau" (persist, không phải mỗi phiên).
+      if (kind === 'diary' && !GATE_FIXTURE && !readAppIntroSeen()) {
+        setShowAppIntro(true)
+      }
     } catch {
       // IndexedDB lỗi (quota/private mode) — sheet ở lại mở, con có thể thử lại.
     }
   }, [clearCurrentFrameObjectUrls])
+
+  /** T-XW21 S2/S6 — nhập `.bbsproj` từ sheet "Dự án mới" (nút "📂 Mở dự án từ file"). Trùng `id` →
+   *  hỏi Ghi đè/Nhân bản qua `window.confirm` nối tiếp (cùng quy ước `window.confirm` HubScreen đã
+   *  dùng cho xoá dự án) — khác `TransferScreen` (UI inline đầy đủ hơn) vì đây là lối tắt gọn từ 1
+   *  sheet đã đang mở, không có chỗ cho UI phụ. Lỗi validate → thông báo qua toast Library có sẵn
+   *  (tái dùng `libraryNotice`, tránh thêm 1 state banner mới chỉ cho 1 luồng phụ). */
+  const handleImportProjectFile = useCallback(async (file: File) => {
+    try {
+      const existing = await listProjects()
+      const existingIds = new Set(existing.map(p => p.id))
+      const result = await parseBbsprojFile(file, existingIds)
+      if (!result.ok) {
+        setLibraryNotice(label(settings.language, BBSPROJ_ERROR_LABEL_KEY[result.error]).main)
+        return
+      }
+
+      let resolution: DuplicateResolution = 'notDuplicate'
+      if (result.value.isDuplicateId) {
+        const wantsOverwrite = window.confirm(
+          `${label(settings.language, 'transfer.duplicateTitle').main}\n\n${label(settings.language, 'transfer.duplicateBody').main}\n\nOK = ${label(settings.language, 'transfer.duplicateOverwrite').main} · Cancel = hỏi tiếp`,
+        )
+        if (wantsOverwrite) {
+          resolution = 'overwrite'
+        } else {
+          const wantsDuplicate = window.confirm(label(settings.language, 'transfer.duplicateDuplicate').main + '?')
+          if (!wantsDuplicate) return // Huỷ hoàn toàn — không ghi gì
+          resolution = 'duplicate'
+        }
+      }
+
+      const project = await commitParsedImport(result.value, resolution)
+      setShowNewProjectSheet(false)
+      await handleOpenProject(project.id)
+    } catch {
+      setLibraryNotice(label(settings.language, 'bbsproj.error.invalidZip').main)
+    }
+  }, [settings.language, handleOpenProject])
 
   /** AC5 — xoá dự án (cascade frames ở tầng data layer) + refresh Hub. */
   const handleDeleteProject = useCallback((id: string) => {
@@ -454,6 +526,7 @@ function App() {
             onOpenProject={(id) => void handleOpenProject(id)}
             onNewProject={() => setShowNewProjectSheet(true)}
             onDeleteProject={handleDeleteProject}
+            onTransferProject={(project) => setTransferProject(project)}
           />
         )}
         {screen === 'capture' && appState === 'CAPTURING' && !showDraft && (
@@ -520,7 +593,11 @@ function App() {
           />
         )}
         {screen === 'settings' && (
-          <SettingsScreen settings={settings} onChange={updateSettings} />
+          <SettingsScreen
+            settings={settings}
+            onChange={updateSettings}
+            onOpenAppIntro={() => setShowAppIntro(true)}
+          />
         )}
       </div>
 
@@ -529,6 +606,29 @@ function App() {
           language={settings.language}
           onCreate={(kind, title) => void handleCreateProject(kind, title)}
           onClose={() => setShowNewProjectSheet(false)}
+          onImportFile={(file) => void handleImportProjectFile(file)}
+        />
+      )}
+
+      {/* T-XW21 S5 — giới thiệu app iOS (nudge tự động sau tạo dự án Nhật ký đầu, HOẶC chủ động từ Cài đặt). */}
+      {showAppIntro && (
+        <AppIntroScreen
+          language={settings.language}
+          onClose={() => setShowAppIntro(false)}
+          onLater={() => { writeAppIntroSeen(); setShowAppIntro(false) }}
+        />
+      )}
+
+      {/* T-XW21 S6 — Chuyển máy & sao lưu, mở từ menu "⋯" của 1 dự án cụ thể trong Hub.
+          `onImported` CHỈ refresh Hub ở NỀN — KHÔNG tự đóng màn (bug đã tự bắt: đóng ngay lập tức
+          khiến thông báo "Đã nhập dự án thành công! 🎉" không kịp hiện ra 1 khung hình nào trước
+          khi unmount). Con tự đóng bằng "Đóng"/backdrop/ESC sau khi đã thấy thông báo. */}
+      {transferProject && (
+        <TransferScreen
+          language={settings.language}
+          project={transferProject}
+          onClose={() => setTransferProject(null)}
+          onImported={() => refreshHubProjects()}
         />
       )}
 

@@ -1,12 +1,21 @@
+import { useEffect, useState } from 'react'
 import { AppSettings, FpsLevel, GOAL_FRAMES_OPTIONS, Language } from '../types'
 import { label, bilingualText } from '../i18n'
 import { useCameraDevices } from '../hooks/useCameraDevices'
+import { getStorageEstimate, requestPersistentStorage, StorageEstimateResult } from '../lib/project/storageGuard'
 import styles from './SettingsScreen.module.css'
 
 interface Props {
   settings: AppSettings
   onChange: (patch: Partial<AppSettings>) => void
+  /** T-XW21 S5 — mở lại màn giới thiệu app iPhone (điểm vào (b), "chủ động xem lại bất cứ lúc nào"). */
+  onOpenAppIntro?: () => void
 }
+
+/** [ARCH] ngưỡng cảnh báo dung lượng — PO chưa chốt số cụ thể (mockup ghi "còn mở"), web-dev tự
+ *  quyết hợp lý theo Autonomy §8 WORKING-WITH-PO: >=80% cảnh báo (vàng), >=95% nguy hiểm (đỏ). */
+const STORAGE_WARN_PCT = 80
+const STORAGE_DANGER_PCT = 95
 
 const SPEED_LEVELS: { level: FpsLevel; icon: string; fps: number }[] = [
   { level: 'slow', icon: '🐢', fps: 1 },
@@ -29,11 +38,31 @@ function Toggle({ checked, onChange, testId }: { checked: boolean; onChange: (v:
   )
 }
 
-export default function SettingsScreen({ settings, onChange }: Props) {
+export default function SettingsScreen({ settings, onChange, onOpenAppIntro }: Props) {
   const language = settings.language
   // F8 (T-BS35) — danh sách camera thật, KHÔNG mở stream riêng (xem useCameraDevices.ts).
   const { devices } = useCameraDevices()
   const titleLabel = label(language, 'settings.title')
+
+  // T-XW21 — Storage 3 lớp: lớp 1 (persist) + lớp 2 (đồng hồ dung lượng), đọc lại mỗi lần vào Cài
+  // đặt (mockup: "cập nhật mỗi lần vào Cài đặt" — không cache xuyên phiên).
+  const [persistGranted, setPersistGranted] = useState<boolean | null>(null)
+  const [estimate, setEstimate] = useState<StorageEstimateResult>({})
+
+  useEffect(() => {
+    let cancelled = false
+    requestPersistentStorage().then(granted => { if (!cancelled) setPersistGranted(granted) })
+    getStorageEstimate().then(est => { if (!cancelled) setEstimate(est) })
+    return () => { cancelled = true }
+  }, [])
+
+  const usagePct = estimate.usageBytes !== undefined && estimate.quotaBytes
+    ? Math.min(100, Math.round((estimate.usageBytes / estimate.quotaBytes) * 100))
+    : 0
+  const gaugeColor = usagePct >= STORAGE_DANGER_PCT
+    ? 'var(--color-error)'
+    : usagePct >= STORAGE_WARN_PCT ? 'var(--color-warn-text)' : 'var(--color-primary)'
+  const formatMb = (bytes?: number) => (bytes !== undefined ? `${(bytes / (1024 * 1024)).toFixed(0)} MB` : '?')
   // PO chốt 2026-07-13 (T-BS78): bỏ hẳn "(dành cho Thợ Cả)"/"(for the Studio Lead)" — tiêu đề
   // chỉ còn "Cài đặt · Settings" (titleLabel.sub = "Settings" khi language='vi+en', null khi
   // chỉ 1 ngôn ngữ nên không hiện phần phụ thừa).
@@ -179,6 +208,73 @@ export default function SettingsScreen({ settings, onChange }: Props) {
             <div className={styles.rowDesc}>IO1 🟢 chụp frame · IO2 🔴 tạo phim</div>
           </div>
           <span className={styles.statusBadge}>Không áp dụng trên web</span>
+        </div>
+
+        {/* T-XW21 S5 — điểm vào (b): chủ động xem lại giới thiệu app iPhone bất cứ lúc nào. */}
+        {onOpenAppIntro && (
+          <button type="button" className={`${styles.row} ${styles.rowClickable}`} onClick={onOpenAppIntro} data-testid="settings-app-intro-row">
+            <span className={styles.iconChip}>📲</span>
+            <div className={styles.rowText}>
+              <div className={styles.rowName}>{label(language, 'appIntro.settingsRow').main}</div>
+              <div className={styles.rowDesc}>{label(language, 'appIntro.settingsRowDesc').main}</div>
+            </div>
+            <span aria-hidden="true">›</span>
+          </button>
+        )}
+      </div>
+
+      {/* T-XW21 — Storage 3 lớp (quyết định #14: vị trí = Cài đặt). */}
+      <div className={styles.card} style={{ marginTop: 14 }} data-testid="storage-card">
+        <div className={styles.storageTitle}>💾 {label(language, 'settings.storageTitle').main}</div>
+
+        <div className={styles.layerRow}>
+          <div className={styles.layerNum}>1</div>
+          <div className={styles.layerBody}>
+            <div className={styles.layerLabel}>{label(language, 'settings.storagePersistLabel').main}</div>
+            {persistGranted === null ? null : persistGranted ? (
+              <span className={`${styles.persistBadge} ${styles.persistBadgeGranted}`} data-testid="storage-persist-granted">
+                ✓ {label(language, 'settings.storagePersistGranted').main}
+              </span>
+            ) : (
+              <span className={`${styles.persistBadge} ${styles.persistBadgeDenied}`} data-testid="storage-persist-denied">
+                ⚠️ {label(language, 'settings.storagePersistDenied').main}
+              </span>
+            )}
+            <div className={styles.layerDesc}>{label(language, 'settings.storagePersistDesc').main}</div>
+          </div>
+        </div>
+
+        <div className={styles.layerRow}>
+          <div className={styles.layerNum}>2</div>
+          <div className={styles.layerBody}>
+            <div className={styles.layerLabel}>{label(language, 'settings.storageGaugeLabel').main}</div>
+            <div className={styles.gaugeTrack}>
+              <div className={styles.gaugeFill} style={{ width: `${usagePct}%`, background: gaugeColor }} data-testid="storage-gauge-fill" />
+            </div>
+            <div className={styles.gaugeText} data-testid="storage-gauge-text">
+              {language === 'en' ? 'Using' : 'Đang dùng'} <b>{formatMb(estimate.usageBytes)}</b>
+              {estimate.quotaBytes !== undefined ? ` / ${formatMb(estimate.quotaBytes)}` : ''}
+            </div>
+            <div className={styles.layerDesc}>{label(language, 'settings.storageGaugeDesc').main}</div>
+          </div>
+        </div>
+
+        <div className={styles.layerRow}>
+          <div className={styles.layerNum}>3</div>
+          <div className={styles.layerBody}>
+            <div className={styles.layerLabel}>{label(language, 'settings.storageHomeScreenLabel').main}</div>
+            <div className={styles.homeTip}>{label(language, 'settings.storageHomeScreenTip').main}</div>
+          </div>
+        </div>
+
+        <div className={styles.layerRow}>
+          <div className={styles.layerNum}>•</div>
+          <div className={styles.layerBody}>
+            <div className={styles.layerLabel} style={{ color: 'var(--color-text-secondary)' }}>
+              {label(language, 'settings.storageFinalLabel').main}
+            </div>
+            <div className={styles.layerDesc}>{label(language, 'settings.storageFinalDesc').main}</div>
+          </div>
         </div>
       </div>
     </div>

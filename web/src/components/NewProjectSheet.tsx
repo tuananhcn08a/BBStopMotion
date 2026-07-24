@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Language } from '../types'
 import { ProjectKind } from '../lib/project/types'
 import { label } from '../i18n'
@@ -8,6 +8,9 @@ interface Props {
   language: Language
   onCreate: (kind: ProjectKind, title: string) => void
   onClose: () => void
+  /** T-XW21 — chọn file `.bbsproj` để nhập (mirror mockup S6 "Nhập dự án từ file"). Không set (vd
+   *  Visual Diff Gate fixtures) → ẩn hẳn hàng này thay vì hint disabled cũ. */
+  onImportFile?: (file: File) => void
 }
 
 // T-XW05 §S2 — pool tên gợi ý, NGUYÊN VĂN từ `NewProjectSheetiOS.swift` dòng 29-36 (Q1 — BA/PO
@@ -27,10 +30,11 @@ function randomName(kind: ProjectKind): string {
   return pool[Math.floor(Math.random() * pool.length)] ?? pool[0]
 }
 
-export default function NewProjectSheet({ language, onCreate, onClose }: Props) {
+export default function NewProjectSheet({ language, onCreate, onClose, onImportFile }: Props) {
   // Mặc định 🎭 Hoạt hình được chọn sẵn (mockup §S2 + iOS `selectedKind: ProjectKind = .animation`).
   const [kind, setKind] = useState<ProjectKind>('animation')
   const [name, setName] = useState<string>(() => randomName('animation'))
+  const importInputRef = useRef<HTMLInputElement | null>(null)
 
   const selectKind = (next: ProjectKind) => {
     setKind(next)
@@ -121,11 +125,33 @@ export default function NewProjectSheet({ language, onCreate, onClose }: Props) 
           {label(language, 'sheet.cta').main}
         </button>
 
-        {/* Wave-6 — `.bbsproj` import chưa làm ở task này; hiện nút disabled + hint để không hứa
-            hẹn tính năng chưa có (mockup §S2, nút hiện nhưng vô hiệu). */}
-        <div className={styles.openFileHint} aria-disabled="true" data-testid="new-project-open-file">
-          📂 {label(language, 'sheet.openFile').main}
-        </div>
+        {/* T-XW21 — `.bbsproj` import THẬT (mockup §S2), thay hint disabled T-XW05. */}
+        {onImportFile && (
+          <>
+            <button
+              type="button"
+              className={styles.openFileBtn}
+              onClick={() => importInputRef.current?.click()}
+              data-testid="new-project-open-file"
+            >
+              📂 {label(language, 'sheet.openFile').main}
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".bbsproj,.zip"
+              className={styles.openFileInputHidden}
+              onChange={e => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (file) onImportFile(file)
+              }}
+              data-testid="new-project-open-file-input"
+              tabIndex={-1}
+              aria-hidden="true"
+            />
+          </>
+        )}
       </div>
     </div>
   )

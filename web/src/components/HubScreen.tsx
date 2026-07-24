@@ -14,6 +14,9 @@ interface Props {
   onOpenProject: (id: string) => void
   onNewProject: () => void
   onDeleteProject: (id: string) => void
+  /** T-XW21 S6 — mở màn "Chuyển máy & sao lưu" cho dự án này (nút "⋯" → "Chuyển máy / Sao lưu").
+   *  Optional (không set — vd Visual Diff Gate fixtures/test cũ) → ẩn hẳn mục menu này. */
+  onTransferProject?: (project: ProjectMeta) => void
 }
 
 /** T-XW05 §S1 — thumbnail cover frame, tra qua `getFrameBytes(id, coverFrameSeq)` → Object URL.
@@ -103,7 +106,7 @@ function projectMetaLine(language: Language, project: ProjectMeta): string {
   return `${kindIcon} ${kindLabel} · ${project.frameCount} ${unitLabel} · ~${seconds.replace('.', ',')}s`
 }
 
-export default function HubScreen({ language, projects, onOpenProject, onNewProject, onDeleteProject }: Props) {
+export default function HubScreen({ language, projects, onOpenProject, onNewProject, onDeleteProject, onTransferProject }: Props) {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -119,6 +122,11 @@ export default function HubScreen({ language, projects, onOpenProject, onNewProj
     if (window.confirm(confirmMsg)) {
       onDeleteProject(project.id)
     }
+  }
+
+  const handleTransferClick = (project: ProjectMeta) => {
+    setMenuOpenId(null)
+    onTransferProject?.(project)
   }
 
   return (
@@ -188,6 +196,18 @@ export default function HubScreen({ language, projects, onOpenProject, onNewProj
                   </button>
                   {menuOpenId === project.id && (
                     <div className={styles.menu} role="menu">
+                      {/* T-XW21 S6 — "Chuyển máy / Sao lưu" (mockup: điểm vào nút "⋯" trên thẻ dự án). */}
+                      {onTransferProject && (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className={styles.menuItem}
+                          onClick={() => handleTransferClick(project)}
+                          data-testid={`hub-project-transfer-${project.id}`}
+                        >
+                          📦 {label(language, 'transfer.title').main}
+                        </button>
+                      )}
                       <button
                         type="button"
                         role="menuitem"

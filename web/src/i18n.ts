@@ -214,6 +214,102 @@ export const STRINGS = {
   'draft.neutral': { vi: 'Chụp thêm để xem phim lớn dần nhé! 🌱', en: 'Keep capturing to watch your film grow! 🌱' },
   'draft.viewDraft': { vi: 'Xem phim nháp', en: 'View draft' },
   'draft.back': { vi: 'Quay lại', en: 'Back' },
+
+  // ---------- T-XW21 — S5 Giới thiệu app iOS ----------
+  'appIntro.title': { vi: 'Đừng bỏ lỡ app iPhone nhé! ⏰', en: 'Also on iPhone' },
+  'appIntro.body1': {
+    vi: 'Trên web, con tự nhớ giờ chụp thôi — app iPhone thì nhắc đúng giờ mỗi ngày, kể cả khi đã tắt máy tính.',
+    en: "On the web you have to remember to shoot yourself — the iPhone app reminds you every day, even with your computer off.",
+  },
+  'appIntro.body2': {
+    vi: 'Chụp mượt hơn, dùng được cả khi không có mạng, và làm tiếp đúng dự án đang có trên web.',
+    en: 'Smoother capture, works offline, and picks up the same project you have on the web.',
+  },
+  'appIntro.body3': {
+    vi: 'Miễn phí trên App Store — tải về khi nào tiện nhé!',
+    en: 'Free on the App Store — download whenever you like!',
+  },
+  'appIntro.appName': { vi: 'BBStopMotion', en: 'BBStopMotion' },
+  'appIntro.appMeta': { vi: 'App Store · Miễn phí', en: 'App Store · Free' },
+  'appIntro.storeCta': { vi: 'Tải trên App Store', en: 'Get it on the App Store' },
+  'appIntro.later': { vi: 'Để sau', en: 'Later' },
+  'appIntro.qrTitle': { vi: 'Đang xem trên máy tính?', en: 'Viewing on a computer?' },
+  'appIntro.qrHint': {
+    vi: 'Mở Camera iPhone, quét mã này là tới thẳng App Store.',
+    en: 'Open your iPhone Camera and scan this code to go straight to the App Store.',
+  },
+  'appIntro.settingsRow': { vi: 'Giới thiệu app iPhone', en: 'About the iPhone app' },
+  'appIntro.settingsRowDesc': { vi: 'Xem lại bất cứ lúc nào', en: 'Revisit anytime' },
+
+  // ---------- T-XW21 — S6 Chuyển máy & sao lưu ----------
+  'transfer.title': { vi: 'Mang dự án đi mọi nơi', en: 'Move & back up' },
+  'transfer.exportOption': { vi: 'Xuất file dự án', en: 'Export project file' },
+  'transfer.importOption': { vi: 'Nhập dự án từ file', en: 'Import project from file' },
+  'transfer.importOptionDesc': {
+    vi: 'Từ máy khác hoặc từ app iOS — làm tiếp, không mất gì',
+    en: 'From another device or the iOS app — pick up right where you left off',
+  },
+  'transfer.backupNote': {
+    vi: '💾 File này cũng là bản sao lưu của con — cất vào Tệp/Drive là yên tâm, kể cả lỡ xoá dữ liệu web.',
+    en: "💾 This file is also your backup — keep it in Files/Drive for peace of mind, even if the web data gets erased.",
+  },
+  'transfer.close': { vi: 'Đóng', en: 'Close' },
+  'transfer.exporting': { vi: 'Đang chuẩn bị file...', en: 'Preparing file...' },
+  'transfer.exportError': { vi: 'Xuất file chưa được, thử lại nhé!', en: "Couldn't export the file — try again!" },
+  'transfer.importing': { vi: 'Đang nhập dự án...', en: 'Importing project...' },
+  'transfer.importSuccess': { vi: 'Đã nhập dự án thành công! 🎉', en: 'Project imported successfully! 🎉' },
+  'transfer.duplicateTitle': { vi: 'Dự án này đã có trên máy', en: 'This project is already here' },
+  'transfer.duplicateBody': {
+    vi: 'Con muốn ghi đè bản cũ hay giữ cả 2 bản?',
+    en: 'Do you want to overwrite the old one, or keep both?',
+  },
+  'transfer.duplicateOverwrite': { vi: 'Ghi đè bản cũ', en: 'Overwrite old one' },
+  'transfer.duplicateDuplicate': { vi: 'Giữ cả 2 (nhân bản)', en: 'Keep both (duplicate)' },
+  'transfer.duplicateCancel': { vi: 'Huỷ', en: 'Cancel' },
+
+  // ---------- T-XW21 — thông báo lỗi importer .bbsproj (mirror BbsprojArchive.ImportError iOS) ----------
+  'bbsproj.error.fileTooLarge': { vi: 'File quá lớn hoặc không hợp lệ.', en: 'File is too large or invalid.' },
+  'bbsproj.error.invalidZip': { vi: 'File không đọc được — có thể đã hỏng.', en: 'Could not read the file — it may be corrupted.' },
+  'bbsproj.error.unsupportedCompression': {
+    vi: 'File không đọc được — có thể đã hỏng.', en: 'Could not read the file — it may be corrupted.',
+  },
+  'bbsproj.error.schemaVersionTooNew': { vi: 'Hãy cập nhật app để mở file này.', en: 'Please update the app to open this file.' },
+  'bbsproj.error.invalidProjectData': {
+    vi: 'File dự án bị thiếu dữ liệu hoặc không hợp lệ.', en: 'The project file is missing data or invalid.',
+  },
+  'bbsproj.error.tooManyFrames': { vi: 'File quá lớn hoặc không hợp lệ.', en: 'File is too large or invalid.' },
+  'bbsproj.error.frameFileTooLarge': { vi: 'File quá lớn hoặc không hợp lệ.', en: 'File is too large or invalid.' },
+  'bbsproj.error.totalTooLarge': { vi: 'File quá lớn hoặc không hợp lệ.', en: 'File is too large or invalid.' },
+
+  // ---------- T-XW21 — Storage 3 lớp (Cài đặt) ----------
+  'settings.storageTitle': { vi: 'Bộ nhớ & lưu trữ', en: 'Storage & backup' },
+  'settings.storagePersistLabel': { vi: 'Lưu trữ bền vững (persist)', en: 'Persistent storage' },
+  'settings.storagePersistGranted': {
+    vi: 'Đã bật — trình duyệt sẽ không tự xoá', en: 'Enabled — the browser won\'t auto-clear this data',
+  },
+  'settings.storagePersistDenied': {
+    vi: 'Chưa bật — trình duyệt có thể tự xoá nếu thiếu chỗ, nhớ xuất file sao lưu thường xuyên nhé',
+    en: 'Not enabled — the browser may clear this if space is low; remember to export a backup file often',
+  },
+  'settings.storagePersistDesc': {
+    vi: 'Xin trình duyệt KHÔNG tự dọn dữ liệu khi máy thiếu chỗ. Nếu trình duyệt từ chối, hiện badge cảnh báo thay vì badge xanh này.',
+    en: "Asks the browser NOT to auto-clear data when the device is low on space. If refused, a warning badge shows instead.",
+  },
+  'settings.storageGaugeLabel': { vi: 'Đồng hồ dung lượng', en: 'Storage gauge' },
+  'settings.storageGaugeDesc': {
+    vi: 'Đọc navigator.storage.estimate(), cập nhật mỗi lần vào Cài đặt.',
+    en: 'Reads navigator.storage.estimate(), refreshed each time you open Settings.',
+  },
+  'settings.storageHomeScreenLabel': { vi: 'Thêm vào Màn hình chính', en: 'Add to Home Screen' },
+  'settings.storageHomeScreenTip': {
+    vi: '📲 Thêm BBStopMotion vào Màn hình chính (Safari: nút Chia sẻ ⬆️ → "Thêm vào MH chính") — iOS sẽ KHÔNG tự xoá dữ liệu sau 7 ngày không dùng như tab trình duyệt thường.',
+    en: '📲 Add BBStopMotion to your Home Screen (Safari: Share ⬆️ → "Add to Home Screen") — iOS won\'t auto-clear data after 7 idle days like a regular browser tab.',
+  },
+  'settings.storageFinalLabel': { vi: 'Lớp bảo hiểm cuối cùng', en: 'Final safety net' },
+  'settings.storageFinalDesc': {
+    vi: 'Vẫn nên tải file .bbsproj về máy định kỳ (mục "Chuyển máy & sao lưu" ở trên) — 3 lớp trên giảm rủi ro, KHÔNG loại bỏ hoàn toàn; file là chỗ dựa cuối tuyệt đối chắc chắn.',
+    en: 'Still export a .bbsproj file regularly ("Move & back up" above) — the 3 layers above reduce risk but don\'t eliminate it; the file is the one truly certain safety net.',
+  },
 } satisfies Record<string, Bi>
 
 export type StringKey = keyof typeof STRINGS
