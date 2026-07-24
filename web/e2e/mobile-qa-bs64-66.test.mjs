@@ -52,6 +52,9 @@ try {
   {
     const page = await browser.newPage()
     await page.setViewport(VIEWPORT)
+    // F6 — welcomeSeen persist qua localStorage (dùng CHUNG mọi page cùng browser instance).
+    // Mỗi section A/B/D dưới đây cần thấy Welcome THẬT (mô phỏng người dùng mới) — xoá trước.
+    await page.evaluateOnNewDocument(() => localStorage.clear())
     await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 15000 })
     await page.waitForSelector('[data-landmark="welcome-cta"]', { timeout: 10000 })
     await sleep(200)
@@ -115,9 +118,17 @@ try {
         return orig(constraints)
       }
     })
+    // F6 — xoá welcomeSeen persist từ section A ở trên (localStorage dùng chung cùng browser).
+    await page.evaluateOnNewDocument(() => localStorage.clear())
 
     await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 15000 })
     await page.click('[data-landmark="welcome-cta"]').catch(() => {})
+    await sleep(300)
+    // T-XW05 — home giờ là Hub; getUserMedia() chỉ được gọi khi CaptureScreen mount (sau khi tạo
+    // dự án), nên đo constraints SAU bước này, không phải ngay sau Welcome.
+    await page.click('[data-testid="hub-new-project-card"]').catch(() => {})
+    await sleep(300)
+    await page.click('[data-testid="new-project-cta"]').catch(() => {})
     await sleep(600)
     capturedConstraints = await page.evaluate(() => window.__lastConstraints)
     const facing = capturedConstraints?.video?.facingMode?.ideal
@@ -187,9 +198,19 @@ try {
   {
     const page = await browser.newPage()
     await page.setViewport(VIEWPORT)
+    // F6 — xoá welcomeSeen persist từ section B ở trên (localStorage dùng chung cùng browser).
+    await page.evaluateOnNewDocument(() => localStorage.clear())
     await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 15000 })
     await page.waitForSelector('[data-landmark="welcome-cta"]', { timeout: 10000 })
     await page.click('[data-landmark="welcome-cta"]')
+    await sleep(300)
+
+    // T-XW05 — home giờ là Hub; tạo 1 dự án Hoạt hình mặc định để vào Capture.
+    await page.waitForSelector('[data-testid="hub-new-project-card"]', { timeout: 10000 })
+    await page.click('[data-testid="hub-new-project-card"]')
+    await sleep(300)
+    await page.waitForSelector('[data-testid="new-project-cta"]', { timeout: 10000 })
+    await page.click('[data-testid="new-project-cta"]')
     await sleep(300)
 
     let camReady = false

@@ -2,12 +2,27 @@
  * Tests for App component — error handling path (T-W06) + Welcome gate (F6)
  *
  * BA Scenarios: TS-04 (export error path), T-W06 AC (catch block shows Vietnamese error),
- * TS-BS-17 (Welcome hiện đầu phiên → bấm Bắt đầu vào Capture)
+ * TS-BS-17 (Welcome hiện đầu phiên → bấm Bắt đầu vào Hub — T-XW05 đổi home Capture→Hub)
+ *
+ * T-XW05 — dùng `fake-indexeddb/auto` thật (không mock nội bộ): App giờ phụ thuộc tầng data
+ * layer T-XW03 (Hub liệt kê/tạo dự án) trước khi vào được Capture.
  */
+import 'fake-indexeddb/auto'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { CapturedFrame, FpsLevel, LibraryEntry } from '../src/types'
+import { DB_NAME, resetAppDbConnectionForTests } from '../src/lib/db/appDb'
+
+async function resetProjectDb(): Promise<void> {
+  await resetAppDbConnectionForTests()
+  await new Promise<void>((resolve) => {
+    const req = indexedDB.deleteDatabase(DB_NAME)
+    req.onsuccess = () => resolve()
+    req.onerror = () => resolve()
+    req.onblocked = () => resolve()
+  })
+}
 
 // ─── Mock useExport ───────────────────────────────────────────────────────────
 // We need to control whether exportVideo resolves or rejects.
@@ -62,11 +77,19 @@ vi.mock('../src/components/ExportProgress', () => ({
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Bấm qua màn Welcome (F6 — luôn hiện đầu phiên, welcomeSeen không persist) để vào Capture. */
+/** Bấm qua màn Welcome → vào Hub (T-XW05 home = Hub, không còn thẳng vào Capture). */
 async function dismissWelcome() {
   const user = userEvent.setup()
   const startBtn = await screen.findByRole('button', { name: /Bắt đầu làm phim/i })
   await user.click(startBtn)
+}
+
+/** Sau Welcome, tạo 1 dự án Hoạt hình mặc định từ sheet Hub để vào Capture (thay `nav-capture`
+ *  cũ đã bỏ — T-XW05: Capture chỉ tới được qua Hub). */
+async function goToCaptureViaHub() {
+  const user = userEvent.setup()
+  await user.click(await screen.findByTestId('hub-new-project-card'))
+  await user.click(await screen.findByTestId('new-project-cta'))
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -74,12 +97,13 @@ async function dismissWelcome() {
 // Module graph phải reset trước MỖI test — dynamic import('../src/App') sau vi.doMock() chỉ
 // tôn trọng mock mới nếu cache module đã được xoá; nếu không, 1 test import App "thật" (không
 // doMock) sẽ làm các test sau vẫn thấy CaptureScreen thật đã cache thay vì bản doMock.
-beforeEach(() => {
+beforeEach(async () => {
   vi.resetModules()
+  await resetProjectDb()
 })
 
 describe('App — Welcome gate (F6/TS-BS-17)', () => {
-  it('TS-BS-17: shows Welcome first; clicking Bắt đầu navigates to Capture (screen=capture)', async () => {
+  it('TS-BS-17: shows Welcome first; clicking Bắt đầu navigates to Hub (T-XW05 home=hub)', async () => {
     const { default: AppDynamic } = await import('../src/App')
     render(<AppDynamic />)
 
@@ -88,6 +112,7 @@ describe('App — Welcome gate (F6/TS-BS-17)', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('sidebar')).toBeInTheDocument()
+      expect(document.querySelector('[data-landmark="hub-screen"]')).toBeInTheDocument()
     })
   })
 })
@@ -130,6 +155,7 @@ describe('App — handleExport error path (T-W06)', () => {
 
     const { unmount } = render(<AppDynamic />)
     await dismissWelcome()
+    await goToCaptureViaHub()
 
     const user = userEvent.setup()
     const triggerBtn = await screen.findByTestId('trigger-export')
@@ -186,6 +212,7 @@ describe('App — handleExport error path (T-W06)', () => {
     const { default: AppDynamic } = await import('../src/App')
     const { unmount } = render(<AppDynamic />)
     await dismissWelcome()
+    await goToCaptureViaHub()
 
     const user = userEvent.setup()
     await user.click(await screen.findByTestId('trigger-export'))

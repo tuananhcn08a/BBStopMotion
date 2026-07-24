@@ -5,21 +5,28 @@ import styles from './Sidebar.module.css'
 interface Props {
   screen: Screen
   onNavigate: (screen: Screen) => void
-  /** 'full' = Capture (nav + progress card + help); 'compact' = Library/Settings (nav only). */
+  /** 'full' = Capture (nav + progress card + help); 'compact' = Hub/Library/Settings (nav only). */
   variant: 'full' | 'compact'
   locked: boolean
   language: Language
   frameCount: number
   goalFrames: number
+  /** T-XW05 — số dự án cho pill header mobile "N dự án" khi `screen==='hub'` (ẩn khi 0/undefined,
+   *  khớp iOS `if !store.projects.isEmpty`). */
+  hubProjectCount?: number
 }
 
-const NAV_ITEMS: { screen: Screen; icon: string; key: 'nav.capture' | 'nav.library' | 'nav.settings' }[] = [
-  { screen: 'capture', icon: '🎥', key: 'nav.capture' },
+const NAV_ITEMS: { screen: Screen; icon: string; key: 'nav.hub' | 'nav.library' | 'nav.settings' }[] = [
+  // T-XW05 — mục 1 đổi từ "🎥 Chụp phim" (thẳng vào Capture) sang "🎬 Xưởng phim" (Hub đa dự án,
+  // mockup wave-1/mockup-hub-create.html, đã chốt).
+  { screen: 'hub', icon: '🎬', key: 'nav.hub' },
   { screen: 'library', icon: '📽️', key: 'nav.library' },
   { screen: 'settings', icon: '⚙️', key: 'nav.settings' },
 ]
 
-export default function Sidebar({ screen, onNavigate, variant, locked, language, frameCount, goalFrames }: Props) {
+export default function Sidebar({
+  screen, onNavigate, variant, locked, language, frameCount, goalFrames, hubProjectCount,
+}: Props) {
   const progressPct = Math.min(frameCount / Math.max(goalFrames, 1), 1) * 100
   const remaining = Math.max(goalFrames - frameCount, 0)
   const goalReached = frameCount >= goalFrames
@@ -27,11 +34,14 @@ export default function Sidebar({ screen, onNavigate, variant, locked, language,
   // T-BS71 — tiêu đề header xanh mobile theo từng màn (redline §1.1). `screen` + `variant` đã đủ
   // phân biệt Capture(full)/Success(capture+compact)/Library/Settings — Export không tới đây vì
   // `locked` ẩn hẳn cả header+tab bar (xem .sidebar[data-locked="true"] mobile trong CSS module).
-  const mobileHeaderTitle = screen === 'library'
-    ? bilingualText(language, 'nav.library')
-    : screen === 'settings'
-      ? bilingualText(language, 'settings.title')
-      : 'BBStopMotion'
+  // T-XW05 — thêm nhánh 'hub' (mockup mHeader "🎬 Xưởng phim").
+  const mobileHeaderTitle = screen === 'hub'
+    ? `🎬 ${bilingualText(language, 'nav.hub')}`
+    : screen === 'library'
+      ? bilingualText(language, 'nav.library')
+      : screen === 'settings'
+        ? bilingualText(language, 'settings.title')
+        : 'BBStopMotion'
 
   return (
     <div
@@ -46,9 +56,16 @@ export default function Sidebar({ screen, onNavigate, variant, locked, language,
           @media (max-width:720px) qua Sidebar.module.css. */}
       <div className={styles.mobileHeader} data-landmark="mobile-header">
         <span className={styles.mobileHeaderTitle}>{mobileHeaderTitle}</span>
-        {variant === 'full' && (
+        {variant === 'full' && screen === 'capture' && (
           <span className={styles.mobileHeaderBadge} data-testid="mobile-header-badge">
             {frameCount} / {goalFrames} ⭐
+          </span>
+        )}
+        {/* T-XW05 — pill "N dự án" (mockup mHeaderBadge Hub) — ẩn khi rỗng, khớp iOS
+            `if !store.projects.isEmpty`. */}
+        {screen === 'hub' && typeof hubProjectCount === 'number' && hubProjectCount > 0 && (
+          <span className={styles.mobileHeaderBadge} data-testid="hub-header-count">
+            {hubProjectCount} dự án
           </span>
         )}
       </div>
@@ -62,7 +79,9 @@ export default function Sidebar({ screen, onNavigate, variant, locked, language,
 
       <nav aria-label="Điều hướng chính" className={styles.navList}>
         {NAV_ITEMS.map(item => {
-          const active = screen === item.screen
+          // 'hub' nav luôn active khi đang ở Hub HOẶC đang Capture 1 dự án (Capture là sub-flow
+          // điều hướng từ Hub, không phải mục nav riêng — mirror mockup tab bar mobile).
+          const active = item.screen === 'hub' ? (screen === 'hub' || screen === 'capture') : screen === item.screen
           const { main, sub } = label(language, item.key)
           return (
             <button

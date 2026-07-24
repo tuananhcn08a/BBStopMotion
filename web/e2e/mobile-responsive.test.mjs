@@ -3,12 +3,13 @@
  * Gate chuẩn cho QA (T-BS60) — chặn tái diễn bug "web không dùng được trên điện thoại" (scroll-lock
  * `overflow:hidden` toàn cục + layout desktop-first tràn ngang trên viewport hẹp).
  *
- * Kịch bản: mở app ở viewport mobile (390×844, khớp iPhone) qua 11 trạng thái màn hình chính
- *           (Welcome, Capture rỗng/có frame/denied camera/dưới ngưỡng export, Export progress,
- *           Success/QR, Library, Library+QR modal, Settings) → mỗi màn kiểm:
+ * Kịch bản: mở app ở viewport mobile (390×844, khớp iPhone) qua 12 trạng thái màn hình chính
+ *           (Welcome, Hub rỗng, Capture rỗng/có frame/denied camera/dưới ngưỡng export, Export
+ *           progress, Success/QR, Library, Library+QR modal, Settings) → mỗi màn kiểm:
  *             1. Không tràn ngang toàn trang (`document.documentElement.scrollWidth <= clientWidth`,
  *                bỏ qua các khối cuộn ngang CHỦ ĐÍCH như Filmstrip `.filmstrip{overflow-x:auto}`).
- *             2. Welcome: CTA "Bắt đầu" cuộn tới được + bấm được → vào đúng màn Capture.
+ *             2. Welcome: CTA "Bắt đầu" cuộn tới được + bấm được → vào đúng màn Hub (T-XW05 home
+ *                đổi Capture→Hub) → tạo dự án → vào Capture.
  *           Chụp ảnh từng màn vào e2e/screenshots/mobile/ làm bằng chứng.
  *
  * Exit 0 khi PASS (mọi màn không tràn ngang + Welcome CTA bấm được)
@@ -88,12 +89,18 @@ async function checkScreen(name, gotoFn) {
 
 try {
   await checkScreen('01-welcome', async page => {
+    // T-XW05 F6 — welcomeSeen giờ persist qua localStorage (cùng origin, dùng CHUNG giữa mọi
+    // `page` trong 1 `browser` instance) — xoá trước mỗi lần cần thấy lại Welcome, nếu không
+    // page nào chạy SAU 1 lần dismiss trong cùng script sẽ không còn thấy Welcome nữa.
+    await page.evaluateOnNewDocument(() => localStorage.clear())
     await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 15000 })
   })
 
-  // AC1 T-BS60 — Welcome cuộn tới CTA + bấm được → vào đúng màn Capture.
+  // AC1 T-BS60 — Welcome cuộn tới CTA + bấm được → vào đúng màn Hub (T-XW05: home đổi
+  // Capture→Hub) → tạo 1 dự án Hoạt hình mặc định → vào Capture.
   const ctaPage = await browser.newPage()
   await ctaPage.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true })
+  await ctaPage.evaluateOnNewDocument(() => localStorage.clear())
   await ctaPage.goto(URL, { waitUntil: 'domcontentloaded', timeout: 15000 })
   await sleep(300)
   await ctaPage.waitForSelector('[data-landmark="welcome-cta"]', { timeout: 5000 })
@@ -103,17 +110,39 @@ try {
     return r.top >= 0 && r.bottom <= window.innerHeight
   })
   await ctaPage.evaluate(() => document.querySelector('[data-landmark="welcome-cta"]').click())
-  await sleep(800)
+  await sleep(500)
+  const reachedHub = await ctaPage.evaluate(() => !!document.querySelector('[data-landmark="hub-screen"]'))
+  await ctaPage.waitForSelector('[data-testid="hub-new-project-card"]', { timeout: 5000 }).catch(() => {})
+  await ctaPage.evaluate(() => document.querySelector('[data-testid="hub-new-project-card"]')?.click())
+  await sleep(300)
+  await ctaPage.waitForSelector('[data-testid="new-project-cta"]', { timeout: 5000 }).catch(() => {})
+  await ctaPage.evaluate(() => document.querySelector('[data-testid="new-project-cta"]')?.click())
+  await sleep(500)
   const reachedCapture = await ctaPage.evaluate(() => !!document.querySelector('[data-landmark="capture-btn"]'))
-  console.log(`[${ctaVisible && reachedCapture ? 'PASS' : 'FAIL'}] welcome-cta-flow — cuộn tới CTA=${ctaVisible} vào Capture=${reachedCapture}`)
-  if (!ctaVisible || !reachedCapture) overallPass = false
+  console.log(`[${ctaVisible && reachedHub && reachedCapture ? 'PASS' : 'FAIL'}] welcome-cta-flow — cuộn tới CTA=${ctaVisible} vào Hub=${reachedHub} → tạo dự án vào Capture=${reachedCapture}`)
+  if (!ctaVisible || !reachedHub || !reachedCapture) overallPass = false
   await ctaPage.close()
 
-  await checkScreen('02-capture-empty', async page => {
+  await checkScreen('01b-hub-empty', async page => {
+    await page.evaluateOnNewDocument(() => localStorage.clear())
     await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 15000 })
+    await page.waitForSelector('[data-landmark="welcome-cta"]', { timeout: 10000 })
+    await page.evaluate(() => document.querySelector('[data-landmark="welcome-cta"]')?.click())
+    await sleep(500)
+  })
+
+  await checkScreen('02-capture-empty', async page => {
+    await page.evaluateOnNewDocument(() => localStorage.clear())
+    await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 15000 })
+    await page.waitForSelector('[data-landmark="welcome-cta"]', { timeout: 10000 })
+    await page.evaluate(() => document.querySelector('[data-landmark="welcome-cta"]')?.click())
+    await sleep(500)
+    await page.waitForSelector('[data-testid="hub-new-project-card"]', { timeout: 10000 })
+    await page.evaluate(() => document.querySelector('[data-testid="hub-new-project-card"]')?.click())
     await sleep(300)
-    await page.evaluate(() => document.querySelector('[data-landmark="welcome-cta"]').click())
-    await sleep(800)
+    await page.waitForSelector('[data-testid="new-project-cta"]', { timeout: 10000 })
+    await page.evaluate(() => document.querySelector('[data-testid="new-project-cta"]')?.click())
+    await sleep(500)
   })
 
   await checkScreen('03-capture-with-frames', async page => {
@@ -161,5 +190,5 @@ try {
   await browser.close()
 }
 
-console.log(overallPass ? '\n✅ MOBILE RESPONSIVE PASS — 10 màn không tràn ngang, Welcome CTA cuộn tới + bấm được' : '\n❌ MOBILE RESPONSIVE FAIL — xem chi tiết ở trên')
+console.log(overallPass ? '\n✅ MOBILE RESPONSIVE PASS — 11 màn không tràn ngang (T-XW05 thêm Hub), Welcome CTA cuộn tới + bấm được' : '\n❌ MOBILE RESPONSIVE FAIL — xem chi tiết ở trên')
 process.exit(overallPass ? 0 : 1)

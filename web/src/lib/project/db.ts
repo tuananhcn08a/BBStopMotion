@@ -164,6 +164,30 @@ export async function renameProject(id: string, title: string): Promise<void> {
   })
 }
 
+/**
+ * T-XW05 AC6 — export KHÔNG đóng dự án (quyết định #10, khớp `ProjectStore.markExported` iOS):
+ * chỉ ghi `exportedAt`, KHÔNG đổi `frames`/trạng thái khác — dự án vẫn còn nguyên trong Hub, gọi
+ * lại nhiều lần vẫn hợp lệ (export lại thì cập nhật `exportedAt` mới nhất).
+ */
+export async function markProjectExported(id: string, exportedAt: number = Date.now()): Promise<void> {
+  const db = await openAppDb()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_PROJECTS, 'readwrite')
+    const store = tx.objectStore(STORE_PROJECTS)
+    const getReq = store.get(id)
+    getReq.onsuccess = () => {
+      const record = getReq.result as ProjectRecord | undefined
+      if (record) {
+        record.exportedAt = exportedAt
+        store.put(record)
+      }
+    }
+    getReq.onerror = () => reject(getReq.error ?? new Error('markProjectExported read failed'))
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error ?? new Error('markProjectExported failed'))
+  })
+}
+
 /** AC6 — xoá dự án + CASCADE mọi frame của nó (không rò rỉ record `frames` mồ côi). */
 export async function deleteProject(id: string): Promise<void> {
   const db = await openAppDb()

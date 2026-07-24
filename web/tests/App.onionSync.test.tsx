@@ -1,10 +1,30 @@
 /**
  * F3 — onionSkinOpacity mặc định 0.4; TS-BS-10: opacity=0% ở Settings → toggle Onion skin ở
  * 2a tự chuyển sang tắt (đồng bộ 2 control).
+ *
+ * T-XW05 — routing đổi sang Hub-first: Capture giờ CHỈ tới được qua Hub (tạo/mở dự án), không
+ * còn nav "Chụp phim" trực tiếp. Helper `goToCapture()` cập nhật đi qua đúng luồng mới (tạo 1 dự
+ * án Hoạt hình từ sheet). Dùng `fake-indexeddb/auto` thật (không mock nội bộ) vì App giờ phụ
+ * thuộc tầng data layer T-XW03 để vào được Capture.
  */
+import 'fake-indexeddb/auto'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { DB_NAME, resetAppDbConnectionForTests } from '../src/lib/db/appDb'
+
+/** Xoá sạch DB giữa các test trong file này — mỗi test tự tạo 1 dự án qua Hub, không dọn sẽ
+ *  cộng dồn dự án cũ (T-XW03 pattern: đóng connection singleton TRƯỚC khi deleteDatabase, nếu
+ *  không sẽ "blocked" vô thời hạn). */
+async function resetProjectDb(): Promise<void> {
+  await resetAppDbConnectionForTests()
+  await new Promise<void>((resolve) => {
+    const req = indexedDB.deleteDatabase(DB_NAME)
+    req.onsuccess = () => resolve()
+    req.onerror = () => resolve()
+    req.onblocked = () => resolve()
+  })
+}
 
 vi.mock('../src/hooks/useExport', () => ({
   useExport: () => ({
@@ -38,15 +58,31 @@ vi.mock('../src/hooks/useCapture', () => ({
   }),
 }))
 
-beforeEach(() => {
+beforeEach(async () => {
   window.localStorage?.clear?.()
   vi.resetModules()
+  await resetProjectDb()
 })
 
+/** Welcome → Hub → "+ Dự án mới" → CTA sheet (mặc định 🎭 Hoạt hình đã chọn sẵn) → vào Capture
+ *  của dự án vừa tạo. Thay cho `nav-capture` cũ (đã bỏ — Capture chỉ tới được qua Hub, T-XW05). */
 async function goToCapture() {
   const user = userEvent.setup()
   const startBtn = await screen.findByRole('button', { name: /Bắt đầu làm phim/i })
   await user.click(startBtn)
+
+  await user.click(await screen.findByTestId('hub-new-project-card'))
+  await user.click(await screen.findByTestId('new-project-cta'))
+  await waitFor(() => expect(screen.getByTestId('camera-video')).toBeInTheDocument())
+}
+
+/** Từ Settings, quay lại Capture của dự án đang mở qua Hub (mở lại card duy nhất — resume). */
+async function backToCaptureViaHub() {
+  const user = userEvent.setup()
+  await user.click(screen.getByTestId('nav-hub'))
+  const projectCard = await screen.findByTestId(/^hub-project-proj-/)
+  await user.click(projectCard)
+  await waitFor(() => expect(screen.getByTestId('camera-video')).toBeInTheDocument())
 }
 
 describe('App — onion opacity 0% đồng bộ tắt toggle (TS-BS-10)', () => {
@@ -60,7 +96,7 @@ describe('App — onion opacity 0% đồng bộ tắt toggle (TS-BS-10)', () => 
     })
   })
 
-  it('TS-BS-10: đổi slider Settings về 0% → quay lại Capture, toggle Onion skin tự tắt', async () => {
+  it('TS-BS-10: đổi slider Settings về 0% → quay lại Capture (qua Hub), toggle Onion skin tự tắt', async () => {
     const { default: AppDynamic } = await import('../src/App')
     render(<AppDynamic />)
     await goToCapture()
@@ -75,7 +111,7 @@ describe('App — onion opacity 0% đồng bộ tắt toggle (TS-BS-10)', () => 
     nativeSetter?.call(slider, '0')
     slider.dispatchEvent(new Event('input', { bubbles: true }))
 
-    await user.click(screen.getByTestId('nav-capture'))
+    await backToCaptureViaHub()
 
     await waitFor(() => {
       expect(screen.getByTestId('onion-toggle')).toHaveAttribute('aria-pressed', 'false')

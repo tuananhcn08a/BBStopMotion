@@ -68,6 +68,14 @@ try {
     await page.click('[data-landmark="welcome-cta"]').catch(() => {})
     await sleep(300)
 
+    // T-XW05 — home giờ là Hub; tạo 1 dự án Hoạt hình mặc định để vào Capture.
+    await page.waitForSelector('[data-testid="hub-new-project-card"]', { timeout: 10000 }).catch(() => {})
+    await page.click('[data-testid="hub-new-project-card"]').catch(() => {})
+    await sleep(300)
+    await page.waitForSelector('[data-testid="new-project-cta"]', { timeout: 10000 }).catch(() => {})
+    await page.click('[data-testid="new-project-cta"]').catch(() => {})
+    await sleep(300)
+
     // Chờ camera thật sẵn sàng
     let camReady = false
     for (let i = 0; i < 30; i++) {

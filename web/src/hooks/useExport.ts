@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react'
 import type { FFmpeg } from '@ffmpeg/ffmpeg'
-import { CapturedFrame, ExportResult, FpsLevel, FPS_VALUES } from '../types'
+import { CapturedFrame, ExportResult, FpsLevel } from '../types'
+import { ProjectKind } from '../lib/project/types'
+import { fpsFor } from '../lib/project/fps'
 
 interface NasUploadResponse {
   ok: boolean
@@ -88,7 +90,12 @@ export interface ExportProgressState {
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 export interface UseExportReturn {
-  exportVideo: (frames: CapturedFrame[], fpsLevel: FpsLevel, autoUpload?: boolean) => Promise<ExportResult>
+  exportVideo: (
+    frames: CapturedFrame[],
+    fpsLevel: FpsLevel,
+    autoUpload?: boolean,
+    kind?: ProjectKind,
+  ) => Promise<ExportResult>
   isExporting: boolean
   progress: ExportProgressState
 }
@@ -101,11 +108,15 @@ export function useExport(): UseExportReturn {
     frames: CapturedFrame[],
     fpsLevel: FpsLevel,
     autoUpload: boolean = true,
+    // T-XW05 AC7 — fps qua fpsFor(kind, level) thay vì FPS_VALUES phẳng. Default 'animation' khớp
+    // Y HỆT hành vi cũ (FPS_VALUES[level] === fpsFor('animation', level) mọi level) cho call-site
+    // nào chưa truyền `kind` (test cũ không cần sửa).
+    kind: ProjectKind = 'animation',
   ): Promise<ExportResult> => {
     setIsExporting(true)
     setProgress({ stage: 'mp4', percent: 0 })
     try {
-      const fps = FPS_VALUES[fpsLevel]
+      const fps = fpsFor(kind, fpsLevel)
       const dataUrls = frames.map(f => f.dataUrl)
       let mp4Calls = 0
       const blob = await exportToMp4(dataUrls, fps, () => {

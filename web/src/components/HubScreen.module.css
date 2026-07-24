@@ -1,0 +1,271 @@
+/* T-XW05 §S1 — Hub Xưởng phim. Desktop: content trong `.main` (App.module.css), giới hạn
+   max-width để không kéo full màn rộng (mockup frameCaption: "content over chrome"). Mobile
+   (≤720px): full width trừ padding, pill số dự án ẩn (đã có trong header xanh Sidebar). */
+
+.screen {
+  max-width: 640px;
+}
+
+.headRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.greet {
+  font-size: var(--typ-body-lg);
+  font-weight: var(--typ-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.greetSub {
+  display: block;
+  font-size: var(--typ-caption);
+  font-weight: var(--typ-weight-regular);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.countPill {
+  font-size: 12px;
+  font-weight: var(--typ-weight-bold);
+  color: var(--color-primary-deep);
+  background: var(--color-bg-tint);
+  border-radius: var(--radius-full);
+  padding: 5px 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.newProject {
+  border: 2px dashed var(--color-border-dashed);
+  border-radius: var(--radius-xl);
+  background: var(--color-bg-tint);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  min-height: var(--hit-target-min);
+  font-family: inherit;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.newProjectPlus {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 24px;
+  font-weight: var(--typ-weight-semibold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-btn-primary);
+  flex-shrink: 0;
+}
+
+.newProjectTxt {
+  display: flex;
+  flex-direction: column;
+}
+
+.newProjectTxt b {
+  font-size: var(--typ-body-lg);
+  font-weight: var(--typ-weight-bold);
+  color: var(--color-primary-deep);
+}
+
+.newProjectSub {
+  font-size: var(--typ-caption);
+  color: var(--color-text-secondary);
+}
+
+.card {
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: var(--hit-target-min);
+  cursor: pointer;
+}
+
+.thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-lg);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  overflow: hidden;
+}
+
+.thumbAnimation {
+  background: linear-gradient(160deg, #E9F1FE 0%, #CFE0FB 100%);
+}
+
+.thumbDiary {
+  background: linear-gradient(160deg, #DFF2E6 0%, #BFE8D0 100%);
+}
+
+.thumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.name {
+  font-size: 15px;
+  font-weight: var(--typ-weight-semibold);
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.chip {
+  align-self: flex-start;
+  font-size: var(--typ-micro);
+  font-weight: var(--typ-weight-bold);
+  border-radius: var(--radius-full);
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.chipTodo {
+  background: var(--color-bg-tint);
+  color: var(--color-primary-deep);
+}
+
+.chipDone {
+  background: var(--color-success-surface);
+  color: var(--color-success);
+  border-color: var(--color-success-border);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.menuWrap {
+  position: relative;
+}
+
+.menuBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-base);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: var(--typ-weight-bold);
+  border: none;
+  cursor: pointer;
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 6px;
+  z-index: 20;
+  min-width: 160px;
+}
+
+.menuItemDanger {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: none;
+  color: var(--color-error-deep);
+  font-weight: var(--typ-weight-semibold);
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.menuItemDanger:hover {
+  background: var(--color-error-surface);
+}
+
+.go {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-tint);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: var(--typ-weight-bold);
+  flex-shrink: 0;
+}
+
+.emptyHint {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 13.5px;
+  font-weight: var(--typ-weight-medium);
+  padding: 28px 12px 8px;
+  line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .screen {
+    max-width: none;
+  }
+
+  /* Pill số dự án đã hiện trong header xanh mobile (Sidebar.tsx) — ẩn bản trong nội dung. */
+  .countPill {
+    display: none;
+  }
+
+  .go {
+    display: none;
+  }
+}

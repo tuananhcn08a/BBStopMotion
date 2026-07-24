@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { CapturedFrame, FpsLevel, FPS_VALUES, MIN_FRAMES_TO_EXPORT, FPS_KEYS, Language } from '../types'
+import { CapturedFrame, FpsLevel, MIN_FRAMES_TO_EXPORT, FPS_KEYS, Language } from '../types'
+import { ProjectKind } from '../lib/project/types'
+import { fpsFor } from '../lib/project/fps'
 import { label, bilingualText } from '../i18n'
 import { useCamera, CameraState } from '../hooks/useCamera'
 import { useCapture } from '../hooks/useCapture'
@@ -19,6 +21,16 @@ interface Props {
   onionOpacity: number
   onionEnabled: boolean
   setOnionEnabled: (enabled: boolean) => void
+  /** T-XW05 AC7 — thể loại dự án đang bind, quyết định bảng fps tra qua `fpsFor(projectKind, l)`
+   *  (animation 1/6/12, diary 3/6/12). Default 'animation' khi không có dự án bind (Visual Diff
+   *  Gate fixtures) — khớp Y HỆT bảng `FPS_VALUES` cũ, không đổi hành vi các luồng gate/test cũ. */
+  projectKind?: ProjectKind
+  /** T-XW05 — autosave: gọi NGAY sau khi 1 frame mới được thêm vào `frames` (App.tsx ghi bytes
+   *  xuống IndexedDB qua `addFrame`). Không set (gate fixture/no project) thì bỏ qua persistence. */
+  onFrameCaptured?: (frame: CapturedFrame) => void
+  /** T-XW05 — autosave: gọi NGAY sau khi 1 frame bị xoá khỏi `frames`, kèm `seq` (=index) vừa xoá
+   *  (App.tsx gọi `db.deleteFrame(projectId, seq)`). */
+  onFrameDeleted?: (seq: number) => void
   /** Visual Diff Gate only (T-BS11) — ép hiển thị 1 camera state tĩnh (denied/no-device) để
    *  chụp mockup 2d state 2, bất kể hook useCamera() thật đang ở state nào. Không set thì
    *  chạy y hệt luồng thật. Xem `src/lib/gateFixture.ts`. */
@@ -98,6 +110,7 @@ function CameraDeviceChooser({
 export default function CaptureScreen({
   frames, setFrames, fpsLevel, setFpsLevel, onExport,
   language, onionOpacity, onionEnabled, setOnionEnabled,
+  projectKind = 'animation', onFrameCaptured, onFrameDeleted,
   forcedCameraState, initialExportError = null, preferredCameraDeviceId,
 }: Props) {
   const { videoRef, state: liveCameraState, stream, devices, activeDeviceId, requestCamera, switchCamera, error } = useCamera(preferredCameraDeviceId)
@@ -122,7 +135,7 @@ export default function CaptureScreen({
   // Preview mode interval
   useEffect(() => {
     if (isPreviewMode && frames.length >= 2) {
-      const interval = 1000 / FPS_VALUES[fpsLevel]
+      const interval = 1000 / fpsFor(projectKind, fpsLevel)
       previewIntervalRef.current = setInterval(() => {
         setPreviewIndex(prev => {
           const next = prev + 1
@@ -140,7 +153,7 @@ export default function CaptureScreen({
     return () => {
       if (previewIntervalRef.current) clearInterval(previewIntervalRef.current)
     }
-  }, [isPreviewMode, frames.length, fpsLevel])
+  }, [isPreviewMode, frames.length, fpsLevel, projectKind])
 
   const handleCapture = useCallback(() => {
     if (!videoRef.current || isPreviewMode || state !== 'live') return
@@ -152,17 +165,22 @@ export default function CaptureScreen({
 
     setFrames(prev => [...prev, frame])
     setExportError(null)
-  }, [videoRef, isPreviewMode, state, captureFrame, setFrames])
+    // T-XW05 — autosave: App.tsx ghi bytes xuống IndexedDB (addFrame) khi có dự án bind.
+    onFrameCaptured?.(frame)
+  }, [videoRef, isPreviewMode, state, captureFrame, setFrames, onFrameCaptured])
 
   const handleDeleteLast = useCallback(() => {
     if (frames.length === 0) return
-    setFrames(prev => deleteFrameAt(prev, prev.length - 1))
-  }, [frames.length, deleteFrameAt, setFrames])
+    const seq = frames.length - 1
+    setFrames(prev => deleteFrameAt(prev, seq))
+    onFrameDeleted?.(seq)
+  }, [frames.length, deleteFrameAt, setFrames, onFrameDeleted])
 
   // F1 — xoá frame bất kỳ theo index (TS-BS-01/02/03)
   const handleDeleteFrame = useCallback((index: number) => {
     setFrames(prev => deleteFrameAt(prev, index))
-  }, [deleteFrameAt, setFrames])
+    onFrameDeleted?.(index)
+  }, [deleteFrameAt, setFrames, onFrameDeleted])
 
   const handleTogglePreview = useCallback(() => {
     if (frames.length < 2) return
@@ -228,7 +246,7 @@ export default function CaptureScreen({
   }, [handleCapture, handleDeleteLast, handleTogglePreview, handleExport, isPreviewMode, setFpsLevel])
 
   const onionSkinFrame = getOnionSkinFrame(frames)
-  const fps = FPS_VALUES[fpsLevel]
+  const fps = fpsFor(projectKind, fpsLevel)
   const estimatedSeconds = frames.length > 0 ? (frames.length / fps).toFixed(1) : '0.0'
   const previewFrame = isPreviewMode && frames[previewIndex] ? frames[previewIndex] : null
 
@@ -399,7 +417,7 @@ export default function CaptureScreen({
         {/* T-BS64 — wrapper riêng để gán CSS `order` trên mobile (order cần áp lên chính flex
             item của .controlsRow, không xuyên qua module CSS của FpsSelector được). */}
         <div className={styles.speedWrap}>
-          <FpsSelector value={fpsLevel} onChange={setFpsLevel} />
+          <FpsSelector value={fpsLevel} onChange={setFpsLevel} kind={projectKind} />
         </div>
 
         <div className={styles.captureWrap}>

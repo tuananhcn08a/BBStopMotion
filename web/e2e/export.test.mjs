@@ -58,10 +58,19 @@ await page.evaluate(() => {
     window.__err.push('ERROR: ' + e.message))
 })
 
-// Bright Studio redesign (T-BS10): app mở màn Welcome (F6) trước khi vào Capture — bấm qua.
+// Bright Studio redesign (T-BS10): app mở màn Welcome (F6) trước khi vào Hub — bấm qua.
 await page.waitForSelector('[data-landmark="welcome-cta"]', { timeout: 10000 }).catch(() => {})
 await page.click('[data-landmark="welcome-cta"]').catch(() => {})
 await sleep(200)
+
+// T-XW05 — home giờ là Hub (Xưởng phim), Capture chỉ tới được qua tạo/mở dự án. Tạo 1 dự án
+// Hoạt hình mặc định (🎭 đã chọn sẵn trong sheet) rồi bấm "Bắt đầu chụp" để vào Capture.
+await page.waitForSelector('[data-testid="hub-new-project-card"]', { timeout: 10000 }).catch(() => {})
+await page.click('[data-testid="hub-new-project-card"]').catch(() => {})
+await sleep(200)
+await page.waitForSelector('[data-testid="new-project-cta"]', { timeout: 10000 }).catch(() => {})
+await page.click('[data-testid="new-project-cta"]').catch(() => {})
+await sleep(300)
 
 // Chờ camera THẬT SỰ sẵn sàng (readyState 4 + có kích thước) — tối đa 20s
 for (let i = 0; i < 40; i++) {

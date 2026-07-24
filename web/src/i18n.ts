@@ -12,6 +12,9 @@ interface Bi {
  */
 export const STRINGS = {
   'nav.capture': { vi: 'Chụp phim', en: 'Capture' },
+  // T-XW05 — nav item 1 đổi từ "Chụp phim" (thẳng vào Capture) sang "Xưởng phim" (Hub đa dự án).
+  // Giữ nguyên key 'nav.capture' cũ (không xoá — bilingual-audit.test.tsx còn tham chiếu).
+  'nav.hub': { vi: 'Xưởng phim', en: 'Film studio' },
   'nav.library': { vi: 'Thư viện phim', en: 'Library' },
   'nav.settings': { vi: 'Cài đặt', en: 'Settings' },
   'nav.help': { vi: 'Trợ giúp', en: 'Help' },
@@ -134,6 +137,42 @@ export const STRINGS = {
   'settings.goalFrames': { vi: 'Mục tiêu frame', en: 'Frame goal' },
   'settings.autoUpload': { vi: 'Tải lên cloud tự động', en: 'Auto-upload to cloud' },
   'settings.thingbot': { vi: 'Nút ThingBot', en: 'ThingBot button' },
+
+  // ---------- T-XW05 — S1 Hub Xưởng phim + S2 Sheet tạo dự án ----------
+  'hub.greeting': { vi: 'Chào con! Hôm nay làm phim gì?', en: 'Hi! What are we filming today?' },
+  'hub.newProjectTitle': { vi: 'Dự án mới', en: 'New project' },
+  'hub.newProjectSub': { vi: 'Hoạt hình hoặc nhật ký', en: 'Animation or diary' },
+  'hub.empty': {
+    vi: 'Chưa có dự án nào — bấm "＋ Dự án mới" để bắt đầu làm phim đầu tiên nhé! 🎬',
+    en: 'No projects yet — tap "+ New project" to start your first film! 🎬',
+  },
+  'hub.menu': { vi: 'Tuỳ chọn khác', en: 'More options' },
+  'hub.deleteProject': { vi: 'Xoá dự án', en: 'Delete project' },
+  'hub.deleteConfirm': {
+    vi: 'Xoá dự án này? Tất cả ảnh và phim nháp sẽ mất luôn, không lấy lại được đâu nhé.',
+    en: "Delete this project? All photos and drafts will be gone for good — this can't be undone.",
+  },
+  'hub.chipExported': { vi: '✓ Đã xuất phim', en: '✓ Exported' },
+  'hub.chipInProgress': { vi: '🎬 Đang làm', en: '🎬 In progress' },
+  'hub.kindAnimation': { vi: 'Hoạt hình', en: 'Animation' },
+  'hub.kindDiary': { vi: 'Nhật ký', en: 'Diary' },
+  'hub.frameUnit': { vi: 'frame', en: 'frames' },
+  'hub.photoUnit': { vi: 'ảnh', en: 'photos' },
+  'hub.openProject': { vi: 'Mở dự án', en: 'Open project' },
+  'sheet.title': { vi: 'Dự án mới', en: 'New project' },
+  'sheet.typeAnimationTitle': { vi: 'Hoạt hình', en: 'Animation' },
+  'sheet.typeAnimationDesc': { vi: 'Kể chuyện bằng đồ vật, đất nặn', en: 'Tell a story with objects, clay' },
+  'sheet.typeDiaryTitle': { vi: 'Nhật ký', en: 'Diary' },
+  'sheet.typeDiaryDesc': { vi: 'Chụp mỗi ngày, xem lớn dần', en: 'A little each day, watch it grow' },
+  'sheet.diaryHint': {
+    vi: '💡 Mỗi ngày chụp 1-3 ảnh, phim sẽ dài dần theo thời gian nhé!',
+    en: '💡 Capture 1-3 photos a day, your film grows over time!',
+  },
+  'sheet.nameLabel': { vi: 'Tên dự án', en: 'Project name' },
+  'sheet.namePlaceholder': { vi: 'Đặt tên cho dự án của con', en: 'Name your project' },
+  'sheet.nameClear': { vi: 'Xoá tên đã nhập', en: 'Clear entered name' },
+  'sheet.cta': { vi: 'Bắt đầu chụp 📷', en: 'Start capturing 📷' },
+  'sheet.openFile': { vi: 'Mở dự án từ file .bbsproj', en: 'Open project from file' },
 } satisfies Record<string, Bi>
 
 export type StringKey = keyof typeof STRINGS

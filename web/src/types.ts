@@ -40,8 +40,9 @@ export const MIN_FRAMES_TO_EXPORT = 5
 
 // ---------- Bright Studio redesign (T-BS10) ----------
 
-/** Top-level nav destination — F5. */
-export type Screen = 'capture' | 'library' | 'settings'
+/** Top-level nav destination — F5. T-XW05: `'hub'` = Xưởng phim (màn chính khi mở app, danh sách
+ *  dự án); `'capture'` giờ CHỈ tới được từ Hub (mở/tạo dự án), không còn là màn mặc định. */
+export type Screen = 'hub' | 'capture' | 'library' | 'settings'
 
 /** Bilingual display mode — F4. */
 export type Language = 'vi+en' | 'vi' | 'en'

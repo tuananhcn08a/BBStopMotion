@@ -39,14 +39,25 @@ try {
   await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 15000 })
   await page.screenshot({ path: path.join(SHOT_DIR, 'flow-01-welcome.png'), fullPage: true })
 
-  // 1. Welcome — cuộn tới CTA + bấm
+  // 1. Welcome — cuộn tới CTA + bấm → Hub (T-XW05 home=Hub, không còn thẳng vào Capture)
   await page.waitForSelector('[data-landmark="welcome-cta"]', { timeout: 10000 })
   await page.evaluate(() => document.querySelector('[data-landmark="welcome-cta"]').scrollIntoView({ block: 'center' }))
   await page.click('[data-landmark="welcome-cta"]')
   await sleep(400)
+  const reachedHub = await page.evaluate(() => !!document.querySelector('[data-landmark="hub-screen"]'))
+  console.log('BƯỚC 1 — vào Hub:', reachedHub)
+  if (!reachedHub) throw new Error('Không vào được Hub sau khi bấm CTA')
+
+  // 1b. Hub → "+ Dự án mới" → sheet (🎭 Hoạt hình đã chọn sẵn) → "Bắt đầu chụp" → Capture
+  await page.waitForSelector('[data-testid="hub-new-project-card"]', { timeout: 10000 })
+  await page.click('[data-testid="hub-new-project-card"]')
+  await sleep(300)
+  await page.waitForSelector('[data-testid="new-project-cta"]', { timeout: 10000 })
+  await page.click('[data-testid="new-project-cta"]')
+  await sleep(400)
   const reachedCapture = await page.evaluate(() => !!document.querySelector('[data-landmark="capture-btn"]'))
-  console.log('BƯỚC 1 — vào Capture:', reachedCapture)
-  if (!reachedCapture) throw new Error('Không vào được Capture sau khi bấm CTA')
+  console.log('BƯỚC 1b — vào Capture (từ sheet tạo dự án):', reachedCapture)
+  if (!reachedCapture) throw new Error('Không vào được Capture sau khi tạo dự án')
 
   // 2. Chờ camera thật + chụp 6 frame
   let camReady = false
