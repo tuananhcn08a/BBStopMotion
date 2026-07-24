@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react'
 import { CapturedFrame } from '../types'
 import {
-  NORMALIZED_HEIGHT, NORMALIZED_MIME, NORMALIZED_QUALITY, NORMALIZED_WIDTH, computeCropFillSourceRect,
+  NORMALIZED_HEIGHT, NORMALIZED_MIME, NORMALIZED_QUALITY, NORMALIZED_WIDTH, drawNormalizedFrame,
 } from '../lib/project/imageNormalize'
 
 export interface UseCaptureReturn {
@@ -26,20 +26,17 @@ export function useCapture(): UseCaptureReturn {
   }, [])
 
   // T-XW09 AC1/AC2 — normalize NGAY LÚC CHỤP: crop-fill khung camera hiện tại (giữ tỉ lệ, không
-  // méo, không viền đen — `computeCropFillSourceRect`) vào canvas cố định 1280×720, encode JPEG
-  // q0.85 MỘT LẦN duy nhất. Frame lưu xuống IndexedDB (qua `db.addFrame`, App.tsx) và export
-  // (ffmpeg.wasm, `useExport.ts`) dùng THẲNG bytes này — không re-encode/downscale lần nữa (AC3).
+  // méo, không viền đen) vào canvas cố định 1280×720, encode JPEG q0.85 MỘT LẦN duy nhất. Frame
+  // lưu xuống IndexedDB (qua `db.addFrame`, App.tsx) và export (ffmpeg.wasm, `useExport.ts`) dùng
+  // THẲNG bytes này — không re-encode/downscale lần nữa (AC3).
+  // T-XW17 — `drawNormalizedFrame` dùng CHUNG với import ảnh (`importImage.ts`), KHÔNG tự
+  // `computeCropFillSourceRect`+`drawImage` riêng ở đây nữa (1 điểm crop-fill duy nhất toàn app).
   const captureFrame = useCallback((video: HTMLVideoElement): CapturedFrame | null => {
     if (!video || video.videoWidth === 0 || video.videoHeight === 0) return null
     const canvas = getCanvas()
     const ctx = canvas.getContext('2d')
     if (!ctx) return null
-    const src = computeCropFillSourceRect(video.videoWidth, video.videoHeight, NORMALIZED_WIDTH, NORMALIZED_HEIGHT)
-    ctx.drawImage(
-      video,
-      src.sx, src.sy, src.sWidth, src.sHeight,
-      0, 0, NORMALIZED_WIDTH, NORMALIZED_HEIGHT,
-    )
+    drawNormalizedFrame(ctx, video, video.videoWidth, video.videoHeight)
     const dataUrl = canvas.toDataURL(NORMALIZED_MIME, NORMALIZED_QUALITY)
     return {
       id: `frame-${Date.now()}-${Math.random().toString(36).slice(2)}`,

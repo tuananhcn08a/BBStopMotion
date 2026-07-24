@@ -161,3 +161,60 @@ describe('Filmstrip — thanh chọn + "🗑 Xoá" (selectionBar)', () => {
     expect(onDeleteSelected).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('Filmstrip — T-XW17 AC2: slot "🖼️ Thêm" import ảnh', () => {
+  it('không truyền onImportFiles (vd gate fixture) → KHÔNG render slot import', () => {
+    render(<Filmstrip {...baseProps({ onImportFiles: undefined })} />)
+    expect(screen.queryByTestId('import-slot-btn')).toBeNull()
+  })
+
+  it('có onImportFiles → hiện slot; bấm slot kích hoạt input file ẩn (mở picker OS)', () => {
+    const onImportFiles = vi.fn()
+    render(<Filmstrip {...baseProps({ onImportFiles })} />)
+    const btn = screen.getByTestId('import-slot-btn')
+    expect(btn).toBeInTheDocument()
+
+    const input = screen.getByTestId('import-file-input') as HTMLInputElement
+    const clickSpy = vi.spyOn(input, 'click')
+    fireEvent.click(btn)
+    expect(clickSpy).toHaveBeenCalledTimes(1)
+  })
+
+  it('chọn file qua input → gọi onImportFiles(FileList) đúng', () => {
+    const onImportFiles = vi.fn()
+    render(<Filmstrip {...baseProps({ onImportFiles })} />)
+    const input = screen.getByTestId('import-file-input') as HTMLInputElement
+    const file = new File(['x'], 'photo.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(input, 'files', { value: [file], writable: false, configurable: true })
+
+    fireEvent.change(input)
+
+    expect(onImportFiles).toHaveBeenCalledTimes(1)
+    const passedFiles = onImportFiles.mock.calls[0][0] as FileList
+    expect(passedFiles).toHaveLength(1)
+    expect(passedFiles[0]).toBe(file)
+  })
+
+  it('chọn 0 file (Huỷ picker) → KHÔNG gọi onImportFiles', () => {
+    const onImportFiles = vi.fn()
+    render(<Filmstrip {...baseProps({ onImportFiles })} />)
+    const input = screen.getByTestId('import-file-input') as HTMLInputElement
+    Object.defineProperty(input, 'files', { value: [], writable: false, configurable: true })
+
+    fireEvent.change(input)
+
+    expect(onImportFiles).not.toHaveBeenCalled()
+  })
+
+  it('isImporting=true → nút disabled + hiện spinner (không icon/label bình thường)', () => {
+    render(<Filmstrip {...baseProps({ onImportFiles: vi.fn(), isImporting: true })} />)
+    const btn = screen.getByTestId('import-slot-btn')
+    expect(btn).toBeDisabled()
+    expect(screen.queryByText('Thêm')).toBeNull()
+  })
+
+  it('trong chế độ Sắp xếp → KHÔNG hiện slot import (1 lối sửa dải tại 1 thời điểm)', () => {
+    render(<Filmstrip {...baseProps({ isSortMode: true, onImportFiles: vi.fn() })} />)
+    expect(screen.queryByTestId('import-slot-btn')).toBeNull()
+  })
+})

@@ -125,11 +125,15 @@ export default function LibraryScreen({ language, entries, onDelete, onPlay, onU
                   data-landmark={`library-row-${rowIndex}`}
                   onMouseLeave={() => { if (isConfirming) setConfirmDeleteId(null) }}
                 >
+                  {/* T-XW17 AC1 — poster THẬT trích từ MP4 (0.1s) ưu tiên hơn `thumbnailDataUrl`
+                      (frame cuối) khi đã sinh xong; phim cũ/chưa xong gen → fallback tự nhiên qua
+                      `??` (KHÔNG backfill hàng loạt, đúng AC1). */}
                   <img
-                    src={entry.thumbnailDataUrl}
+                    src={entry.posterDataUrl ?? entry.thumbnailDataUrl}
                     alt={entry.title}
                     className={styles.thumb}
                     data-landmark={`library-row-${rowIndex}-thumb`}
+                    data-testid={`library-thumb-${entry.id}`}
                   />
                   <div className={styles.info}>
                     <div className={styles.filmTitle} data-landmark={`library-row-${rowIndex}-title`}>{entry.title}</div>

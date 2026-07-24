@@ -92,4 +92,10 @@ export interface LibraryEntry {
   /** Tên bé — redline 1g meta "{Tên bé} · {N} frame · {N}s · {giờ}". Web hiện chưa thu thập
    *  tên bé ở luồng thật (ngoài phạm vi F7 hiện có) nên optional; chỉ gate fixture set giá trị này. */
   childName?: string
+  /** T-XW17 AC1 — poster JPEG THẬT trích từ MP4 (~0.1s, mirror `LibraryStore.generatePoster` iOS),
+   *  sinh ASYNC sau khi export xong (không chặn Success screen) — `undefined` lúc entry mới tạo,
+   *  cập nhật khi gen xong. Ưu tiên hiển thị hơn `thumbnailDataUrl` (frame cuối) khi có. Phim CŨ
+   *  (trước T-XW17, `posterDataUrl` mãi mãi `undefined`) → UI tự fallback `thumbnailDataUrl`, KHÔNG
+   *  backfill hàng loạt (đúng AC1). */
+  posterDataUrl?: string
 }

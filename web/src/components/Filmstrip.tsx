@@ -26,6 +26,13 @@ interface Props {
   onRevertSort: () => void
   onFinishSort: () => void
   onDeleteSelected: () => void
+
+  // ---------- T-XW17 AC2 — import ảnh từ máy vào dự án (mirror ImportSlotiOS) ----------
+  /** Không set (vd Visual Diff Gate fixtures) → ẩn hẳn slot import. */
+  onImportFiles?: (files: FileList) => void
+  /** Đang xử lý batch import (normalize từng ảnh) — disable slot + hiện spinner, khớp
+   *  `ImportSlotiOS` `.disabled(isImporting)`. */
+  isImporting?: boolean
 }
 
 const DRAG_MOVE_THRESHOLD = 8
@@ -34,9 +41,24 @@ export default function Filmstrip({
   frames, selectedIndex, language, disabled = false, onOpenViewer,
   isSortMode, draftOrder, selectedSeqs, hasDraftChanges,
   onEnterSortMode, onToggleSelect, onReorder, onRevertSort, onFinishSort, onDeleteSelected,
+  onImportFiles, isImporting = false,
 }: Props) {
   const title = label(language, 'filmstrip.title')
   const hint = label(language, 'filmstrip.hint')
+  const importInputRef = useRef<HTMLInputElement | null>(null)
+
+  const handleImportClick = useCallback(() => {
+    if (isImporting) return
+    importInputRef.current?.click()
+  }, [isImporting])
+
+  const handleImportInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files && files.length > 0) onImportFiles?.(files)
+    // Reset value — chọn LẠI đúng (các) file cũ vẫn kích hoạt onChange lần nữa (input HTML mặc
+    // định không bắn onChange nếu value không đổi).
+    e.target.value = ''
+  }, [onImportFiles])
 
   // ---------- Kéo-thả (Sắp xếp) — 1 bộ Pointer Events DUY NHẤT/thumb, tự phân biệt chạm=chọn vs
   // giữ+kéo=đổi thứ tự bằng ngưỡng di chuyển (khớp tinh thần "1 gesture handler thống nhất" của
@@ -182,6 +204,42 @@ export default function Filmstrip({
             </div>
           )
         })}
+        {/* T-XW17 AC2 — slot "🖼️ Thêm" import ảnh từ máy (mirror ImportSlotiOS), cạnh slot "+"
+            tiếp theo — ẩn trong chế độ Sắp xếp (cùng lý do: không sửa dải trong lúc đang nháp). */}
+        {!isSortMode && onImportFiles && (
+          <span className={styles.importSlotWrap}>
+            <button
+              type="button"
+              className={styles.importSlot}
+              onClick={handleImportClick}
+              disabled={isImporting}
+              aria-label={label(language, 'filmstrip.importAria').main}
+              data-testid="import-slot-btn"
+            >
+              {isImporting ? (
+                <span className={styles.importSpinner} aria-hidden="true" />
+              ) : (
+                <>
+                  <span className={styles.importIcon} aria-hidden="true">🖼️</span>
+                  <span className={styles.importLabel}>{label(language, 'filmstrip.importLabel').main}</span>
+                </>
+              )}
+            </button>
+            {/* Sibling ẨN HẲN của nút (KHÔNG lồng trong <button>) — tránh click nút kích nổ luôn
+                input bên trong gây double-trigger; `.click()` gọi tay từ `handleImportClick`. */}
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImportInputChange}
+              className={styles.importInputHidden}
+              data-testid="import-file-input"
+              tabIndex={-1}
+              aria-hidden="true"
+            />
+          </span>
+        )}
         {/* Next slot (empty) — ẩn trong chế độ Sắp xếp (không có gì để "chụp tiếp" khi đang sửa). */}
         {!isSortMode && (
           <div className={styles.emptySlot} aria-label="Slot frame tiếp theo">

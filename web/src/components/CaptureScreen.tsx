@@ -4,6 +4,7 @@ import { ProjectKind } from '../lib/project/types'
 import { fpsFor } from '../lib/project/fps'
 import { addDaysMs, diaryPhotoPositionNext, diaryTodayCount, startOfDayMs } from '../lib/project/diary'
 import { hasDraftChanges as hasDraftChangesPure, initialDraftOrder, moveElement, removeSeqs } from '../lib/project/filmstripSort'
+import { normalizeImportedFiles } from '../lib/project/importImage'
 import { label, bilingualText } from '../i18n'
 import { useCamera, CameraState } from '../hooks/useCamera'
 import { useCapture } from '../hooks/useCapture'
@@ -166,6 +167,10 @@ export default function CaptureScreen({
   // đóng qua ✕/vuốt xuống/ESC/click nền đen (PhotoViewer tự lo, xem component đó).
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
 
+  // T-XW17 AC2 — import ảnh từ máy: đang xử lý batch (normalize từng ảnh) hay không, xem
+  // `handleImportFiles` bên dưới.
+  const [isImporting, setIsImporting] = useState(false)
+
   // ---------- T-XW14 — chế độ "🔀 Sắp xếp" transactional (mirror CaptureViewModel iOS:
   // isEditingFilmstrip/sortSnapshot/hasDraftChanges/toggleSortMode/finishSortMode/
   // commitSortModeOnScreenLeave/revertSortChanges/commitSortChanges) ----------
@@ -232,7 +237,8 @@ export default function CaptureScreen({
   const handleCapture = useCallback(() => {
     // T-XW14 — khoá chụp trong lúc đang Sắp xếp (tránh lệch seq giữa `frames` sống và snapshot
     // nháp đang sửa dở — mirror iOS: không chụp được khi filmstrip đang ở chế độ sửa).
-    if (!videoRef.current || isPreviewMode || isSortMode || state !== 'live') return
+    // T-XW17 — khoá thêm trong lúc đang import ảnh (1 lối thêm-vào-dải tại 1 thời điểm).
+    if (!videoRef.current || isPreviewMode || isSortMode || isImporting || state !== 'live') return
     const frame = captureFrame(videoRef.current)
     if (!frame) return
 
@@ -243,7 +249,7 @@ export default function CaptureScreen({
     setExportError(null)
     // T-XW05 — autosave: App.tsx ghi bytes xuống IndexedDB (addFrame) khi có dự án bind.
     onFrameCaptured?.(frame)
-  }, [videoRef, isPreviewMode, isSortMode, state, captureFrame, setFrames, onFrameCaptured])
+  }, [videoRef, isPreviewMode, isSortMode, isImporting, state, captureFrame, setFrames, onFrameCaptured])
 
   const handleDeleteLast = useCallback(() => {
     // T-XW14 — khoá xoá-nhanh-frame-cuối trong lúc đang Sắp xếp (1 lối xoá tại 1 thời điểm).
@@ -258,6 +264,32 @@ export default function CaptureScreen({
     setViewerIndex(index)
   }, [])
   const handleCloseViewer = useCallback(() => setViewerIndex(null), [])
+
+  // ---------- T-XW17 AC2/AC3 — import ảnh từ máy vào dự án (mirror ImportSlotiOS +
+  // CaptureViewModel.importImages): mỗi ảnh normalize (TÁI DÙNG `imageNormalize.ts`, cùng pipeline
+  // camera) rồi nối cuối `frames` qua ĐÚNG CÙNG con đường 1 frame chụp đi (append RAM + autosave
+  // `onFrameCaptured`) — seq luôn liên tục theo đúng bất biến index===seq (ghi chú `handleFrameDeleted`
+  // ở App.tsx). Khoá khi đang Sắp xếp (1 lối sửa dải tại 1 thời điểm, cùng nguyên tắc `handleCapture`). ----------
+  const handleImportFiles = useCallback(async (fileList: FileList) => {
+    if (isSortMode || isImporting) return
+    const files = Array.from(fileList)
+    if (files.length === 0) return
+    setIsImporting(true)
+    try {
+      const normalized = await normalizeImportedFiles(files)
+      for (const img of normalized) {
+        const frame: CapturedFrame = {
+          id: `import-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          dataUrl: img.dataUrl,
+          timestamp: Date.now(),
+        }
+        setFrames(prev => [...prev, frame])
+        onFrameCaptured?.(frame)
+      }
+    } finally {
+      setIsImporting(false)
+    }
+  }, [isSortMode, isImporting, setFrames, onFrameCaptured])
 
   // ---------- T-XW14 — chế độ "🔀 Sắp xếp" transactional (THAY nút "×" xoá-ngay cũ của
   // Filmstrip — kéo-thả/xoá chỉ đổi RAM (`draftOrder`) cho tới khi commit). ----------
@@ -718,6 +750,8 @@ export default function CaptureScreen({
         onRevertSort={handleRevertSort}
         onFinishSort={handleFinishSort}
         onDeleteSelected={handleDeleteSelected}
+        onImportFiles={isPreviewMode ? undefined : handleImportFiles}
+        isImporting={isImporting}
       />
 
       {viewerIndex !== null && (

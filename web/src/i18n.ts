@@ -77,6 +77,9 @@ export const STRINGS = {
     vi: 'Xoá các ảnh đã chọn? Không lấy lại được sau khi bấm "✕ Xong" đâu nhé.',
     en: 'Delete the selected photos? This can\'t be undone after you tap "✕ Done".',
   },
+  // ---------- T-XW17 AC2 — slot "🖼️ Thêm" import ảnh từ máy vào dự án ----------
+  'filmstrip.importLabel': { vi: 'Thêm', en: 'Add' },
+  'filmstrip.importAria': { vi: 'Thêm ảnh từ máy', en: 'Add photos from device' },
   'export.title': { vi: 'Đang ghép phim của con...', en: 'Creating your movie...' },
   'export.stageMp4': { vi: 'Ghép MP4', en: 'Compose MP4' },
   'export.stageGif': { vi: 'Tạo GIF', en: 'Create GIF' },

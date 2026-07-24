@@ -16,8 +16,9 @@
     "e2e:resume": "node e2e/project-resume.test.mjs",
     "e2e:diary": "node e2e/diary-hud.test.mjs",
     "e2e:photo-viewer-sort": "node e2e/photo-viewer-sort.test.mjs",
+    "e2e:library-poster-import-blob": "node e2e/library-poster-import-blob.test.mjs",
     "e2e:mobile": "node e2e/mobile-responsive.test.mjs && node e2e/mobile-interactions.test.mjs && node e2e/mobile-full-flow.test.mjs && node e2e/mobile-qa-bs64-66.test.mjs",
-    "e2e:all": "node e2e/export.test.mjs && node e2e/camera.test.mjs && node e2e/library.test.mjs && node e2e/project-resume.test.mjs && node e2e/diary-hud.test.mjs && node e2e/photo-viewer-sort.test.mjs && node e2e/mobile-responsive.test.mjs && node e2e/mobile-interactions.test.mjs && node e2e/mobile-full-flow.test.mjs && node e2e/mobile-qa-bs64-66.test.mjs",
+    "e2e:all": "node e2e/export.test.mjs && node e2e/camera.test.mjs && node e2e/library.test.mjs && node e2e/project-resume.test.mjs && node e2e/diary-hud.test.mjs && node e2e/photo-viewer-sort.test.mjs && node e2e/library-poster-import-blob.test.mjs && node e2e/mobile-responsive.test.mjs && node e2e/mobile-interactions.test.mjs && node e2e/mobile-full-flow.test.mjs && node e2e/mobile-qa-bs64-66.test.mjs",
     "verify": "node verify/gate.mjs",
     "verify:selftest": "node verify/gate.mjs --screen selftest --platform web --mockup verify/fixtures/self-test.html --app-url verify/fixtures/self-test.html --out-dir verify/.out/selftest-pass && node verify/gate.mjs --screen selftest-fail --platform web --mockup verify/fixtures/self-test.html --app-url verify/fixtures/self-test-fail.html --out-dir verify/.out/selftest-fail --expect-fail"
   },

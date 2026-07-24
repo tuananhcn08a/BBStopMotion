@@ -9,7 +9,11 @@ import {
 } from './lib/project/db'
 import { arrayBufferToObjectUrl, dataUrlToArrayBuffer, revokeIfObjectUrl, toPersistableDataUrl } from './lib/project/frameBytes'
 import { loadSettings, saveSettings } from './lib/settingsStore'
-import { addLibraryEntry, deleteLibraryEntry, listLibraryEntries } from './lib/libraryDb'
+import {
+  addLibraryEntry, deleteLibraryEntry, deleteLibraryVideoBlob, getLibraryVideoBlob,
+  listLibraryEntries, saveLibraryVideoBlob, updateLibraryEntry,
+} from './lib/libraryDb'
+import { generatePosterFromBlob } from './lib/project/posterGen'
 import { label } from './i18n'
 import Sidebar from './components/Sidebar'
 import WelcomeScreen from './components/WelcomeScreen'
@@ -322,12 +326,26 @@ function App() {
         expiresAt: result.expiresAt,
       }
       blobCacheRef.current.set(entryId, result.blob)
+      // T-XW17 AC4 — persist blob MP4 xuống IndexedDB (thay RAM-only `blobCacheRef`) — fire-and-
+      // forget, KHÔNG chặn Success screen; RAM cache ở trên vẫn phục vụ phát/upload NGAY trong
+      // phiên hiện tại, IndexedDB đảm bảo còn dùng được sau reload.
+      saveLibraryVideoBlob(entryId, result.blob).catch(() => { /* ignore — RAM cache vẫn đủ dùng trong phiên này */ })
       try {
         await addLibraryEntry(entry)
         setLibraryEntries(prev => [entry, ...prev])
       } catch {
         // IndexedDB không khả dụng — bỏ qua, không chặn luồng export chính
       }
+
+      // T-XW17 AC1 — poster THẬT trích từ MP4 (0.1s), sinh ASYNC SAU khi entry đã hiện trong Thư
+      // viện (fallback `thumbnailDataUrl` hiện tạm cho tới khi xong) — mirror iOS `Task.detached` +
+      // `markPosterReady`. Lỗi (video hỏng/codec lạ/trình duyệt không hỗ trợ) → `null`, im lặng bỏ
+      // qua, entry giữ nguyên fallback mãi mãi (không throw, không chặn luồng chính).
+      generatePosterFromBlob(result.blob).then(posterDataUrl => {
+        if (!posterDataUrl) return
+        setLibraryEntries(prev => prev.map(e => (e.id === entryId ? { ...e, posterDataUrl } : e)))
+        updateLibraryEntry(entryId, { posterDataUrl }).catch(() => { /* ignore — UI đã cập nhật RAM */ })
+      }).catch(() => { /* ignore — giữ fallback thumbnailDataUrl */ })
     } catch (err) {
       console.error('Export failed:', err)
       setExportError(label(settings.language, 'states.exportError').main)
@@ -359,34 +377,48 @@ function App() {
     setAppState('CAPTURING')
   }, [currentProjectId, clearCurrentFrameObjectUrls])
 
+  /** T-XW17 AC4 — RAM cache trước (nhanh, còn trong phiên hiện tại), thiếu thì đọc lại IndexedDB
+   *  (còn sau reload) — tự nạp lại vào `blobCacheRef` để các lần gọi sau trong CÙNG phiên không
+   *  phải đọc IndexedDB lại. `undefined` khi cả 2 đều thiếu (phim rất cũ trước T-XW17, hoặc
+   *  IndexedDB không khả dụng) — call-site tự fallback `uploadUrl`/thông báo. */
+  const resolveEntryBlob = useCallback(async (id: string): Promise<Blob | undefined> => {
+    const cached = blobCacheRef.current.get(id)
+    if (cached) return cached
+    const persisted = await getLibraryVideoBlob(id).catch(() => undefined)
+    if (persisted) blobCacheRef.current.set(id, persisted)
+    return persisted
+  }, [])
+
   const handleLibraryDelete = useCallback((id: string) => {
     setLibraryEntries(prev => prev.filter(e => e.id !== id))
     deleteLibraryEntry(id).catch(() => { /* ignore */ })
+    deleteLibraryVideoBlob(id).catch(() => { /* ignore */ })
     blobCacheRef.current.delete(id)
   }, [])
 
   const handleLibraryPlay = useCallback((entry: LibraryEntry) => {
-    const cachedBlob = blobCacheRef.current.get(entry.id)
-    if (cachedBlob) {
-      window.open(URL.createObjectURL(cachedBlob), '_blank')
-    } else if (entry.uploadUrl) {
-      window.open(entry.uploadUrl, '_blank')
-    }
-  }, [])
+    resolveEntryBlob(entry.id).then(blob => {
+      if (blob) {
+        window.open(URL.createObjectURL(blob), '_blank')
+      } else if (entry.uploadUrl) {
+        window.open(entry.uploadUrl, '_blank')
+      }
+    }).catch(() => { /* ignore */ })
+  }, [resolveEntryBlob])
 
   const handleLibraryUpload = useCallback(async (entry: LibraryEntry) => {
-    const cachedBlob = blobCacheRef.current.get(entry.id)
-    if (!cachedBlob) {
-      // File gốc không còn trong bộ nhớ trình duyệt (đã đóng tab/reload) — giới hạn đã biết của
-      // kiến trúc Web Library metadata-only (Q6a). Không crash — báo nhẹ cho bé thay vì im lặng
-      // (architect follow-up non-blocking, T-BS10 review).
+    const blob = await resolveEntryBlob(entry.id)
+    if (!blob) {
+      // Blob không còn RAM lẫn IndexedDB (phim rất cũ trước T-XW17, hoặc IndexedDB không khả
+      // dụng/đã bị dọn) — báo nhẹ cho bé thay vì im lặng (architect follow-up non-blocking, T-BS10
+      // review). Từ T-XW17, trường hợp này hiếm hơn hẳn trước (không còn phụ thuộc RAM-only).
       setLibraryNotice(label(settings.language, 'library.blobExpired').main)
       return
     }
     setUploadingId(entry.id)
     try {
       const filename = `${entry.title}.mp4`
-      const uploaded = await uploadExportedFile(cachedBlob, filename)
+      const uploaded = await uploadExportedFile(blob, filename)
       const updated = { ...entry, uploadUrl: uploaded.downloadUrl, expiresAt: uploaded.expiresAt }
       setLibraryEntries(prev => prev.map(e => (e.id === entry.id ? updated : e)))
       await addLibraryEntry(updated)
@@ -395,7 +427,7 @@ function App() {
     } finally {
       setUploadingId(null)
     }
-  }, [settings.language])
+  }, [settings.language, resolveEntryBlob])
 
   if (!welcomeSeen) {
     return <WelcomeScreen language={settings.language} onStart={handleStartWelcome} />

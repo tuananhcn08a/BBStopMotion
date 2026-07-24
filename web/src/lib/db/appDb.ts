@@ -12,7 +12,7 @@
  */
 
 export const DB_NAME = 'bbstopmotion-library'
-export const DB_VERSION = 2
+export const DB_VERSION = 3
 
 /** v1 — Library (metadata phim đã export), xem `src/lib/libraryDb.ts`. */
 export const STORE_ENTRIES = 'entries'
@@ -22,6 +22,10 @@ export const STORE_PROJECTS = 'projects'
 export const STORE_FRAMES = 'frames'
 /** Index trên `frames.projectId` — liệt kê mọi frame của 1 dự án. */
 export const FRAMES_BY_PROJECT_INDEX = 'by-project'
+/** v3 — T-XW17: blob MP4 đã export, THAY `blobCacheRef` (RAM, mất khi reload). Bytes dạng
+ *  ArrayBuffer (không phải `Blob` trực tiếp) — nhất quán với `frames` (T-XW03) + tránh bug Safari
+ *  lưu `Blob` thẳng trong IndexedDB (xem ghi chú `project/db.ts`). keyPath = `id` (= library entry id). */
+export const STORE_VIDEO_BLOBS = 'videoBlobs'
 
 // Singleton connection — mọi call-site (libraryDb.ts + project/db.ts) share 1 kết nối thay vì mở
 // mới mỗi lần gọi. Ngoài đỡ tốn tài nguyên, đây là cách chuẩn tránh IndexedDB "blocked" mãi mãi:
@@ -54,6 +58,11 @@ export function openAppDb(): Promise<IDBDatabase> {
         if (!db.objectStoreNames.contains(STORE_FRAMES)) {
           const framesStore = db.createObjectStore(STORE_FRAMES, { keyPath: ['projectId', 'seq'] })
           framesStore.createIndex(FRAMES_BY_PROJECT_INDEX, 'projectId')
+        }
+
+        // v3 — T-XW17.
+        if (!db.objectStoreNames.contains(STORE_VIDEO_BLOBS)) {
+          db.createObjectStore(STORE_VIDEO_BLOBS, { keyPath: 'id' })
         }
       }
       req.onsuccess = () => {

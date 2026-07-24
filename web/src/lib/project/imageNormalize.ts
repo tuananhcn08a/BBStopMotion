@@ -59,3 +59,26 @@ export function computeCropFillSourceRect(
   const sHeight = sourceWidth / targetAspect
   return { sx: 0, sy: (sourceHeight - sHeight) / 2, sWidth: sourceWidth, sHeight }
 }
+
+/**
+ * T-XW17 — vẽ 1 nguồn ảnh (video HOẶC ảnh import) đã crop-fill vào `ctx` (canvas ĐÍCH kích thước
+ * CỐ ĐỊNH `NORMALIZED_WIDTH`×`NORMALIZED_HEIGHT`, do CALL-SITE tạo trước). Đây là ĐIỂM DUY NHẤT
+ * gọi `drawImage` crop-fill trong toàn app — `useCapture.ts` (nguồn `<video>` camera, T-XW09) VÀ
+ * import ảnh (`importImage.ts`, nguồn `ImageBitmap`/`HTMLImageElement`, T-XW17) đều gọi hàm này,
+ * KHÔNG tự viết `drawImage` crop-fill riêng — đảm bảo cross-device khớp tuyệt đối (cùng 1 công
+ * thức crop `computeCropFillSourceRect` + cùng đích 1280×720, bất kể nguồn là camera hay ảnh có
+ * sẵn trên máy).
+ */
+export function drawNormalizedFrame(
+  ctx: CanvasRenderingContext2D,
+  source: CanvasImageSource,
+  sourceWidth: number,
+  sourceHeight: number,
+): void {
+  const src = computeCropFillSourceRect(sourceWidth, sourceHeight, NORMALIZED_WIDTH, NORMALIZED_HEIGHT)
+  ctx.drawImage(
+    source,
+    src.sx, src.sy, src.sWidth, src.sHeight,
+    0, 0, NORMALIZED_WIDTH, NORMALIZED_HEIGHT,
+  )
+}

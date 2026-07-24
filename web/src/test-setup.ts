@@ -35,3 +35,23 @@ if (typeof URL.createObjectURL !== 'function') {
     return originalFetch(input, init)
   }) as typeof fetch
 }
+
+/**
+ * T-XW17 — jsdom's `Blob` KHÔNG implement `.arrayBuffer()` (verify trực tiếp: `typeof new
+ * Blob([]).arrayBuffer === 'undefined'` trong vitest+jsdom, dù `.arrayBuffer()` là API chuẩn được
+ * MỌI trình duyệt thật hỗ trợ từ lâu — `saveLibraryVideoBlob`/`normalizeImportedFile` dùng API này
+ * để đọc bytes). `new Response(blob).arrayBuffer()` ĐÃ THỬ nhưng jsdom's `Response` không đọc
+ * đúng nội dung `Blob` (trả literal `"[object Blob]"`) — polyfill qua `FileReader` thay vào (jsdom
+ * implement ĐÚNG, đọc được bytes thật của `Blob`, xác nhận qua thực nghiệm). CHỈ kích hoạt khi API
+ * gốc thật sự thiếu (guard `typeof === 'undefined'`), không đụng hành vi trình duyệt thật.
+ */
+if (typeof Blob.prototype.arrayBuffer === 'undefined') {
+  Blob.prototype.arrayBuffer = function (this: Blob): Promise<ArrayBuffer> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as ArrayBuffer)
+      reader.onerror = () => reject(reader.error ?? new Error('Blob.arrayBuffer polyfill failed'))
+      reader.readAsArrayBuffer(this)
+    })
+  }
+}
