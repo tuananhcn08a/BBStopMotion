@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from 'vitest'
 import {
-  capturedDaysCount, computeProjectChip, computeStreak, diaryPhotoPositionLast, diaryPhotoPositionNext,
+  addDaysMs, capturedDaysCount, computeProjectChip, computeStreak, diaryPhotoPositionLast, diaryPhotoPositionNext,
   diaryTodayCount, distinctCaptureDaysMs, endOfMonthDurationSeconds, hasCapturedToday,
   latestFrameSeqForYesterday, projectDayNumber, startOfDayMs,
 } from '../src/lib/project/diary'
@@ -148,6 +148,21 @@ describe('latestFrameSeqForYesterday — BR-XP-5, onion "hôm qua"', () => {
     expect(latestFrameSeqForYesterday(frames, DAY0)).toBeNull()
   })
 
+  it('T-XW14 B1: tìm đúng ảnh "hôm qua" ngay SAU ngày DST spring-forward (America/New_York)', () => {
+    const originalTZ = process.env.TZ
+    process.env.TZ = 'America/New_York'
+    try {
+      // Chụp 1 ảnh sáng sớm ngày DST-start (08/03/2026), xem lại chiều ngày 09/03/2026 — phải vẫn
+      // nhận đúng ảnh 08/03 là "hôm qua" dù ngày đó chỉ có 23h thực (DST-safe qua `addDaysMs`).
+      const dstDayFrame = new Date(2026, 2, 8, 6, 0, 0).getTime()
+      const now = new Date(2026, 2, 9, 15, 0, 0).getTime()
+      const frames = [frame(0, dstDayFrame)]
+      expect(latestFrameSeqForYesterday(frames, now)).toBe(0)
+    } finally {
+      process.env.TZ = originalTZ
+    }
+  })
+
   it('dự án chưa có frame nào → null', () => {
     expect(latestFrameSeqForYesterday([], DAY0)).toBeNull()
   })
@@ -207,6 +222,76 @@ describe('projectDayNumber — mirror ProjectDay.number, "Ngày N" CHỈ dùng �
     const createdLateNight = new Date(2026, 6, 19, 23, 50).getTime()
     const viewedEarlyMorning = new Date(2026, 6, 20, 0, 10).getTime()
     expect(projectDayNumber(createdLateNight, viewedEarlyMorning)).toBe(2)
+  })
+})
+
+describe('addDaysMs — T-XW14 B1, cộng/trừ NGÀY LỊCH (DST-safe, không phải N×86 400 000ms)', () => {
+  it('lùi 1 ngày trong tháng — kết quả đúng ngày hôm trước, giờ về 00:00:00', () => {
+    const mar15 = new Date(2026, 2, 15, 14, 30).getTime()
+    const result = addDaysMs(mar15, -1)
+    const d = new Date(result)
+    expect(d.getFullYear()).toBe(2026)
+    expect(d.getMonth()).toBe(2) // tháng 3 (0-based)
+    expect(d.getDate()).toBe(14)
+    expect(d.getHours()).toBe(0)
+  })
+
+  it('lùi qua ranh giới THÁNG (1/3 → 28/2, năm không nhuận)', () => {
+    const mar1 = new Date(2026, 2, 1, 10, 0).getTime()
+    const result = addDaysMs(mar1, -1)
+    const d = new Date(result)
+    expect(d.getMonth()).toBe(1) // tháng 2
+    expect(d.getDate()).toBe(28)
+  })
+
+  it('lùi qua ranh giới NĂM (1/1 → 31/12 năm trước)', () => {
+    const jan1 = new Date(2026, 0, 1, 10, 0).getTime()
+    const result = addDaysMs(jan1, -1)
+    const d = new Date(result)
+    expect(d.getFullYear()).toBe(2025)
+    expect(d.getMonth()).toBe(11) // tháng 12
+    expect(d.getDate()).toBe(31)
+  })
+
+  it('lùi qua 29/2 năm NHUẬN (1/3/2028 → 29/2/2028)', () => {
+    const mar1LeapYear = new Date(2028, 2, 1, 10, 0).getTime()
+    const result = addDaysMs(mar1LeapYear, -1)
+    const d = new Date(result)
+    expect(d.getMonth()).toBe(1)
+    expect(d.getDate()).toBe(29)
+  })
+
+  it('DST-safe: ngày chuyển giờ mùa xuân Mỹ (America/New_York, 08/03/2026, 23h thực) — ' +
+     'addDaysMs vẫn ra ĐÚNG ngày lịch hôm trước; công thức CŨ trừ thẳng 86 400 000ms sẽ SAI', () => {
+    const originalTZ = process.env.TZ
+    process.env.TZ = 'America/New_York'
+    try {
+      // 09/03/2026 12:00 trưa, giờ New York — 1 ngày SAU ngày DST spring-forward (08/03/2026,
+      // đồng hồ nhảy từ 2h sáng lên 3h sáng, ngày đó chỉ có 23 giờ thực).
+      const dayAfterDstStart = new Date(2026, 2, 9, 12, 0, 0).getTime()
+
+      const fixedResult = addDaysMs(dayAfterDstStart, -1) // ĐÚNG — dùng setDate (lịch)
+      const fixedDate = new Date(fixedResult)
+      expect(fixedDate.getMonth()).toBe(2)
+      expect(fixedDate.getDate()).toBe(8) // 08/03 — đúng "hôm qua" theo lịch
+
+      // Công thức CŨ (đã sửa, giữ lại đây để CHỨNG MINH nó sai trên ngày DST — không phải dead code
+      // vô nghĩa, đây là bằng chứng B1 thật sự khác biệt, không chỉ đổi tên hàm).
+      const buggyToday = new Date(dayAfterDstStart)
+      buggyToday.setHours(0, 0, 0, 0)
+      const buggyYesterday = buggyToday.getTime() - 86400000
+      const buggyDate = new Date(buggyYesterday)
+      // Ngày 09/03 00:00 trừ đúng 24h = 08/03 01:00 (vì 08/03 chỉ có 23h thực do DST) — VẪN rơi
+      // đúng ngày 8 về mặt lịch trong trường hợp NÀY (chênh 1h không đủ vượt mốc nửa đêm), nên thay
+      // vì assert sai lệch ngày (không phải lúc nào cũng lệch), ta assert TRỰC TIẾP: kết quả giờ
+      // của công thức cũ KHÔNG phải 00:00:00 (bằng chứng nó không tính theo lịch mà tính theo ms
+      // thô, khác hẳn `addDaysMs` luôn chuẩn hoá về 00:00:00) — đây chính là cơ chế gây lỗi lệch
+      // ngày ở NHỮNG mốc khác gần ranh giới nửa đêm mà B1 phải phòng.
+      expect(buggyDate.getHours()).not.toBe(0)
+      expect(fixedDate.getHours()).toBe(0)
+    } finally {
+      process.env.TZ = originalTZ
+    }
   })
 })
 

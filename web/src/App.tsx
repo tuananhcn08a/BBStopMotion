@@ -3,7 +3,8 @@ import { AppState, AppSettings, CapturedFrame, ExportResult, FpsLevel, LibraryEn
 import { ProjectKind, ProjectMeta } from './lib/project/types'
 import { fpsFor } from './lib/project/fps'
 import {
-  addFrame as dbAddFrame, createProject, deleteFrame as dbDeleteFrame, deleteProject as dbDeleteProject,
+  addFrame as dbAddFrame, commitFrameOrder as dbCommitFrameOrder, createProject,
+  deleteFrame as dbDeleteFrame, deleteProject as dbDeleteProject,
   getFrameBytes, getProject, listProjects, markProjectExported,
 } from './lib/project/db'
 import { arrayBufferToObjectUrl, dataUrlToArrayBuffer, revokeIfObjectUrl, toPersistableDataUrl } from './lib/project/frameBytes'
@@ -257,6 +258,15 @@ function App() {
     dbDeleteFrame(currentProjectId, seq).catch(() => { /* ignore */ })
   }, [currentProjectId])
 
+  /** T-XW14 — commit "1 phát" chế độ Sắp xếp transactional xuống IndexedDB (mirror
+   *  `ProjectStore.commitFrameOrder` iOS). `keptSeqsInOrder` = seq GỐC còn giữ lại, theo ĐÚNG thứ
+   *  tự MỚI — CaptureScreen tự cập nhật `frames` RAM tương ứng, ở đây chỉ lo phần ghi đĩa. No-op
+   *  khi không có dự án bind (gate fixture) — khớp autosave pattern `handleFrameCaptured`/`handleFrameDeleted`. */
+  const handleCommitFrameOrder = useCallback((keptSeqsInOrder: number[]) => {
+    if (!currentProjectId) return
+    dbCommitFrameOrder(currentProjectId, keptSeqsInOrder).catch(() => { /* ignore */ })
+  }, [currentProjectId])
+
   const handleExport = useCallback(async (currentFrames: CapturedFrame[], currentFps: FpsLevel) => {
     setExportError(null)
     setAppState('EXPORTING')
@@ -430,6 +440,7 @@ function App() {
             projectKind={currentProjectKind}
             onFrameCaptured={handleFrameCaptured}
             onFrameDeleted={handleFrameDeleted}
+            onCommitFrameOrder={handleCommitFrameOrder}
             onViewDraft={currentProjectId ? () => setShowDraft(true) : undefined}
             preferredCameraDeviceId={settings.cameraDeviceId}
             forcedCameraState={GATE_FIXTURE === 'denied' ? 'denied' : undefined}

@@ -2,25 +2,25 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { CapturedFrame, FpsLevel, MIN_FRAMES_TO_EXPORT, FPS_KEYS, Language } from '../types'
 import { ProjectKind } from '../lib/project/types'
 import { fpsFor } from '../lib/project/fps'
-import { diaryPhotoPositionNext, diaryTodayCount, startOfDayMs } from '../lib/project/diary'
+import { addDaysMs, diaryPhotoPositionNext, diaryTodayCount, startOfDayMs } from '../lib/project/diary'
+import { hasDraftChanges as hasDraftChangesPure, initialDraftOrder, moveElement, removeSeqs } from '../lib/project/filmstripSort'
 import { label, bilingualText } from '../i18n'
 import { useCamera, CameraState } from '../hooks/useCamera'
 import { useCapture } from '../hooks/useCapture'
 import OnionSkin from './OnionSkin'
 import OnionInline from './OnionInline'
 import Filmstrip from './Filmstrip'
+import PhotoViewer from './PhotoViewer'
 import FpsSelector from './FpsSelector'
 import StepIndicator from './StepIndicator'
 import styles from './CaptureScreen.module.css'
 
-const MS_PER_DAY = 86400000
-
 /** T-XW10 AC2 — CapturedFrame dùng field `timestamp` (không phải `capturedAt` như ProjectFrame ở
  *  data layer) nên chọn ảnh "hôm qua" tại đây thay vì tái dùng `latestFrameSeqForYesterday`
- *  (diary.ts) — cùng thuật toán (ngày lịch liền trước, mới nhất trong ngày đó), khác shape input. */
+ *  (diary.ts) — cùng thuật toán (ngày lịch liền trước, mới nhất trong ngày đó), khác shape input.
+ *  T-XW14 B1 — `addDaysMs(now, -1)` (lịch, DST-safe) thay `startOfDayMs(now) - MS_PER_DAY`. */
 function findLatestFrameForYesterday(frames: CapturedFrame[], now: number = Date.now()): CapturedFrame | null {
-  const today = startOfDayMs(now)
-  const yesterday = today - MS_PER_DAY
+  const yesterday = addDaysMs(now, -1)
   let best: CapturedFrame | null = null
   for (const frame of frames) {
     if (startOfDayMs(frame.timestamp) === yesterday) {
@@ -54,6 +54,12 @@ interface Props {
   /** T-XW05 — autosave: gọi NGAY sau khi 1 frame bị xoá khỏi `frames`, kèm `seq` (=index) vừa xoá
    *  (App.tsx gọi `db.deleteFrame(projectId, seq)`). */
   onFrameDeleted?: (seq: number) => void
+  /** T-XW14 — commit "1 phát" chế độ Sắp xếp transactional (mirror `ProjectStore.commitFrameOrder`
+   *  iOS, xem `db.ts`). `keptSeqsInOrder` = seq GỐC của các frame còn giữ lại, theo ĐÚNG thứ tự
+   *  MỚI mong muốn (App.tsx gọi `db.commitFrameOrder(projectId, keptSeqsInOrder)`). Gọi đúng 1 lần
+   *  khi bấm "✕ Xong" HOẶC khi rời màn Chụp giữa lúc còn thay đổi dở dang (auto-commit). Không set
+   *  (gate fixture/no project) thì bỏ qua persistence — vẫn cập nhật RAM (`setFrames`) bình thường. */
+  onCommitFrameOrder?: (keptSeqsInOrder: number[]) => void
   /** T-XW10 AC5 — onion inline 3 trạng thái (bản 🌱): opacity nhớ lại lúc bật sau khi tắt. */
   onionLastOpacity?: number
   /** T-XW10 AC5 — ghi thẳng `onionSkinOpacity` (đồng bộ 2 chiều với slider Cài đặt). */
@@ -139,7 +145,7 @@ function CameraDeviceChooser({
 export default function CaptureScreen({
   frames, setFrames, fpsLevel, setFpsLevel, onExport,
   language, onionOpacity, onionEnabled, setOnionEnabled,
-  projectKind = 'animation', onFrameCaptured, onFrameDeleted,
+  projectKind = 'animation', onFrameCaptured, onFrameDeleted, onCommitFrameOrder,
   onionLastOpacity = 0.4, onOnionOpacityChange, onViewDraft,
   forcedCameraState, initialExportError = null, preferredCameraDeviceId,
 }: Props) {
@@ -155,6 +161,43 @@ export default function CaptureScreen({
   const [previewIndex, setPreviewIndex] = useState(0)
   const [exportError, setExportError] = useState<string | null>(initialExportError)
   const previewIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // T-XW14 — Photo Viewer: index đang mở to (null = đóng). Mở qua chạm thumbnail (Filmstrip),
+  // đóng qua ✕/vuốt xuống/ESC/click nền đen (PhotoViewer tự lo, xem component đó).
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null)
+
+  // ---------- T-XW14 — chế độ "🔀 Sắp xếp" transactional (mirror CaptureViewModel iOS:
+  // isEditingFilmstrip/sortSnapshot/hasDraftChanges/toggleSortMode/finishSortMode/
+  // commitSortModeOnScreenLeave/revertSortChanges/commitSortChanges) ----------
+  const [isSortMode, setIsSortMode] = useState(false)
+  // Snapshot RAM chụp NGAY lúc vào chế độ — index của mảng NÀY = seq GỐC bất biến trong suốt
+  // phiên nháp (kéo-thả/xoá chỉ đổi `draftOrder`, KHÔNG đụng mảng này cho tới khi thoát mode).
+  const [sortSnapshot, setSortSnapshot] = useState<CapturedFrame[]>([])
+  // seq GỐC theo ĐÚNG thứ tự hiển thị hiện tại của bản nháp (xem `filmstripSort.ts`).
+  const [draftOrder, setDraftOrder] = useState<number[]>([])
+  const [selectedSeqs, setSelectedSeqs] = useState<Set<number>>(new Set())
+
+  // Ref luôn phản ánh state Sắp xếp MỚI NHẤT — dùng trong cleanup của effect unmount (auto-commit
+  // khi rời màn Chụp giữa lúc đang sửa dở, xem effect bên dưới); cleanup của `useEffect([])` chỉ
+  // chạy 1 lần lúc unmount nên PHẢI đọc qua ref để không dùng closure state cũ (stale) lúc mount.
+  const sortStateRef = useRef({ isSortMode, sortSnapshot, draftOrder })
+  useEffect(() => {
+    sortStateRef.current = { isSortMode, sortSnapshot, draftOrder }
+  }, [isSortMode, sortSnapshot, draftOrder])
+
+  // AC4 — rời màn Chụp (unmount CaptureScreen: điều hướng đi Hub/Thư viện/Cài đặt hoặc mở Phim
+  // nháp S4) giữa lúc đang có thay đổi dở dang trong chế độ Sắp xếp → AUTO-COMMIT xuống IndexedDB,
+  // KHÔNG hỏi lại, KHÔNG mất dữ liệu (khớp mockup "rời màn ... → AUTO-COMMIT").
+  useEffect(() => {
+    return () => {
+      const { isSortMode: sm, sortSnapshot: snap, draftOrder: order } = sortStateRef.current
+      if (sm && snap.length > 0 && hasDraftChangesPure(snap.length, order)) {
+        onCommitFrameOrder?.(order)
+        setFrames(order.map(seq => snap[seq]))
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Attach stream to video element
   useEffect(() => {
@@ -187,7 +230,9 @@ export default function CaptureScreen({
   }, [isPreviewMode, frames.length, fpsLevel, projectKind])
 
   const handleCapture = useCallback(() => {
-    if (!videoRef.current || isPreviewMode || state !== 'live') return
+    // T-XW14 — khoá chụp trong lúc đang Sắp xếp (tránh lệch seq giữa `frames` sống và snapshot
+    // nháp đang sửa dở — mirror iOS: không chụp được khi filmstrip đang ở chế độ sửa).
+    if (!videoRef.current || isPreviewMode || isSortMode || state !== 'live') return
     const frame = captureFrame(videoRef.current)
     if (!frame) return
 
@@ -198,20 +243,70 @@ export default function CaptureScreen({
     setExportError(null)
     // T-XW05 — autosave: App.tsx ghi bytes xuống IndexedDB (addFrame) khi có dự án bind.
     onFrameCaptured?.(frame)
-  }, [videoRef, isPreviewMode, state, captureFrame, setFrames, onFrameCaptured])
+  }, [videoRef, isPreviewMode, isSortMode, state, captureFrame, setFrames, onFrameCaptured])
 
   const handleDeleteLast = useCallback(() => {
-    if (frames.length === 0) return
+    // T-XW14 — khoá xoá-nhanh-frame-cuối trong lúc đang Sắp xếp (1 lối xoá tại 1 thời điểm).
+    if (frames.length === 0 || isSortMode) return
     const seq = frames.length - 1
     setFrames(prev => deleteFrameAt(prev, seq))
     onFrameDeleted?.(seq)
-  }, [frames.length, deleteFrameAt, setFrames, onFrameDeleted])
+  }, [frames.length, isSortMode, deleteFrameAt, setFrames, onFrameDeleted])
 
-  // F1 — xoá frame bất kỳ theo index (TS-BS-01/02/03)
-  const handleDeleteFrame = useCallback((index: number) => {
-    setFrames(prev => deleteFrameAt(prev, index))
-    onFrameDeleted?.(index)
-  }, [deleteFrameAt, setFrames, onFrameDeleted])
+  // ---------- T-XW14 — Photo Viewer (chạm thumbnail xem to) ----------
+  const handleOpenViewer = useCallback((index: number) => {
+    setViewerIndex(index)
+  }, [])
+  const handleCloseViewer = useCallback(() => setViewerIndex(null), [])
+
+  // ---------- T-XW14 — chế độ "🔀 Sắp xếp" transactional (THAY nút "×" xoá-ngay cũ của
+  // Filmstrip — kéo-thả/xoá chỉ đổi RAM (`draftOrder`) cho tới khi commit). ----------
+  const handleEnterSortMode = useCallback(() => {
+    if (frames.length === 0) return
+    setSortSnapshot(frames)
+    setDraftOrder(initialDraftOrder(frames.length))
+    setSelectedSeqs(new Set())
+    setIsSortMode(true)
+  }, [frames])
+
+  const handleToggleSelect = useCallback((seq: number) => {
+    setSelectedSeqs(prev => {
+      const next = new Set(prev)
+      if (next.has(seq)) next.delete(seq)
+      else next.add(seq)
+      return next
+    })
+  }, [])
+
+  const handleReorder = useCallback((fromIndex: number, toIndex: number) => {
+    setDraftOrder(prev => moveElement(prev, fromIndex, toIndex))
+  }, [])
+
+  const handleRevertSort = useCallback(() => {
+    setDraftOrder(initialDraftOrder(sortSnapshot.length))
+    setSelectedSeqs(new Set())
+  }, [sortSnapshot.length])
+
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedSeqs.size === 0) return
+    // Mockup §2 — "🗑 Xoá mở confirm dialog (2 bước, KHÔNG xoá thẳng)"; cùng quy ước
+    // `window.confirm` HubScreen đã dùng cho xoá dự án (nhất quán trong codebase).
+    if (!window.confirm(label(language, 'filmstrip.sortDeleteConfirm').main)) return
+    setDraftOrder(prev => removeSeqs(prev, selectedSeqs))
+    setSelectedSeqs(new Set())
+  }, [selectedSeqs, language])
+
+  // "✕ Xong" — commit 1 phát xuống IndexedDB (no-op nếu không đổi gì) rồi thoát chế độ.
+  const handleFinishSort = useCallback(() => {
+    if (hasDraftChangesPure(sortSnapshot.length, draftOrder)) {
+      onCommitFrameOrder?.(draftOrder)
+      setFrames(draftOrder.map(seq => sortSnapshot[seq]))
+    }
+    setIsSortMode(false)
+    setSortSnapshot([])
+    setDraftOrder([])
+    setSelectedSeqs(new Set())
+  }, [sortSnapshot, draftOrder, onCommitFrameOrder, setFrames])
 
   const handleTogglePreview = useCallback(() => {
     if (frames.length < 2) return
@@ -304,6 +399,11 @@ export default function CaptureScreen({
   const hintSuffix = label(language, 'hint.captureSuffix')
   const canExport = frames.length >= MIN_FRAMES_TO_EXPORT
 
+  // T-XW14 — bản nháp RAM hiển thị khi đang Sắp xếp: seq gốc trong `draftOrder` chiếu ngược vào
+  // `sortSnapshot` (không phải `frames` sống) — kéo-thả/xoá trong lúc nháp KHÔNG đụng `frames`.
+  const displayFrames = isSortMode ? draftOrder.map(seq => sortSnapshot[seq]) : frames
+  const hasSortChanges = hasDraftChangesPure(sortSnapshot.length, draftOrder)
+
   return (
     <>
       {/* Step indicator + onion toggle — T-XW10: 🌱 dùng OnionInline mới (dải dưới HUD, 3 trạng
@@ -344,7 +444,10 @@ export default function CaptureScreen({
           TRÊN/DƯỚI là SIBLING của khung live, KHÔNG bao giờ đè lên pixel camera. Khung live khoá
           16:9 (khớp frame chuẩn hoá 1280×720, T-XW09) — chỉ chứa camera/onion/flash/placeholder,
           tuyệt đối sạch. */}
-      <div className={styles.previewOuter} data-landmark="camera-preview">
+      <div
+        className={`${styles.previewOuter} ${isSortMode ? styles.previewDimmed : ''}`}
+        data-landmark="camera-preview"
+      >
         <div className={styles.bandTop}>
           <div className={styles.bandLeft}>
             {cameraLive && (
@@ -598,14 +701,28 @@ export default function CaptureScreen({
         </div>
       </div>
 
-      {/* Filmstrip */}
+      {/* Filmstrip — T-XW14: chế độ "🔀 Sắp xếp" transactional THAY nút "×" xoá-ngay cũ. */}
       <Filmstrip
-        frames={frames}
+        frames={displayFrames}
         selectedIndex={frames.length - 1}
         language={language}
-        onDeleteFrame={handleDeleteFrame}
         disabled={isPreviewMode}
+        onOpenViewer={isPreviewMode ? undefined : handleOpenViewer}
+        isSortMode={isSortMode}
+        draftOrder={isSortMode ? draftOrder : frames.map((_, i) => i)}
+        selectedSeqs={selectedSeqs}
+        hasDraftChanges={hasSortChanges}
+        onEnterSortMode={handleEnterSortMode}
+        onToggleSelect={handleToggleSelect}
+        onReorder={handleReorder}
+        onRevertSort={handleRevertSort}
+        onFinishSort={handleFinishSort}
+        onDeleteSelected={handleDeleteSelected}
       />
+
+      {viewerIndex !== null && (
+        <PhotoViewer frames={frames} initialIndex={viewerIndex} onClose={handleCloseViewer} />
+      )}
     </>
   )
 }

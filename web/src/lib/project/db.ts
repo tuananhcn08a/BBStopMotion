@@ -387,3 +387,79 @@ export function reorderFrames(projectId: string, newOrder: number[]): Promise<vo
       }),
   )
 }
+
+/**
+ * T-XW14 — commit "1 phát" chế độ Sắp xếp transactional, mirror `ProjectStore.commitFrameOrder`
+ * iOS: gộp XOÁ (seq cũ KHÔNG có mặt trong `keptSeqsInOrder`) + ĐỔI VỊ TRÍ (renumber liên tục 0..n-1
+ * theo đúng thứ tự `keptSeqsInOrder`) trong CÙNG 1 transaction — đây là điểm ghi đĩa DUY NHẤT của
+ * cả phiên nháp "🔀 Sắp xếp" (kéo-thả/xoá trong lúc nháp chỉ đổi RAM ở tầng UI, KHÔNG gọi hàm này
+ * cho tới khi "✕ Xong"/rời màn). `keptSeqsInOrder` = danh sách `seq` CŨ (lúc vào chế độ Sắp xếp)
+ * của các frame CÒN GIỮ LẠI, theo ĐÚNG thứ tự MỚI mong muốn.
+ *
+ * No-op an toàn (không ghi gì) nếu `keptSeqsInOrder` có phần tử trùng lặp hoặc chứa `seq` không tồn
+ * tại trên đĩa hiện tại — bảo vệ khỏi state UI lệch/race, khớp `ProjectStore.commitFrameOrder`.
+ * No-op nhanh (không ghi thừa) nếu thứ tự mới TRÙNG thứ tự hiện có trên đĩa.
+ */
+export function commitFrameOrder(projectId: string, keptSeqsInOrder: number[]): Promise<void> {
+  return openAppDb().then(
+    db =>
+      new Promise<void>((resolve, reject) => {
+        const tx = db.transaction([STORE_PROJECTS, STORE_FRAMES], 'readwrite')
+        const projectsStore = tx.objectStore(STORE_PROJECTS)
+        const framesStore = tx.objectStore(STORE_FRAMES)
+        const idx = framesStore.index(FRAMES_BY_PROJECT_INDEX)
+
+        const getAllReq = idx.getAll(IDBKeyRange.only(projectId))
+        getAllReq.onsuccess = () => {
+          const records = (getAllReq.result as FrameRecord[]).sort((a, b) => a.seq - b.seq)
+          const existingSeqs = new Set(records.map(r => r.seq))
+          const isValid =
+            new Set(keptSeqsInOrder).size === keptSeqsInOrder.length &&
+            keptSeqsInOrder.every(seq => existingSeqs.has(seq))
+          if (!isValid) return // no-op an toàn — khớp guard iOS
+
+          const currentOrder = records.map(r => r.seq)
+          const isNoop = currentOrder.length === keptSeqsInOrder.length
+            && currentOrder.every((seq, i) => seq === keptSeqsInOrder[i])
+          if (isNoop) return // không xoá gì + thứ tự y hệt hiện có — tránh ghi thừa
+
+          const bySeq = new Map(records.map(r => [r.seq, r]))
+
+          // Phase 1 — xoá TOÀN BỘ record hiện có (cả giữ lại lẫn bị xoá) TRƯỚC khi ghi lại. Bắt
+          // buộc 2 pha tách biệt (không xoá+ghi đan xen từng phần tử): permute vị trí bất kỳ có
+          // thể khiến 1 seq MỚI trùng đúng 1 seq CŨ chưa kịp di dời (vd oldSeq 2→newSeq 0 trong khi
+          // oldSeq 0→newSeq 1 CHƯA xử lý) — ghi đè nhầm nếu xoá/ghi xen kẽ. Cùng kỹ thuật
+          // `reorderFrames` ở trên.
+          for (const r of records) framesStore.delete([projectId, r.seq])
+
+          // Phase 2 — ghi lại CHỈ các frame giữ lại, renumber liên tục 0..n-1 theo đúng thứ tự
+          // `keptSeqsInOrder` (seq bị xoá ở phase 1 không được ghi lại — đã loại khỏi tập kết quả).
+          let lastCapturedAt: number | undefined
+          let coverFrameSeq: number | undefined
+          keptSeqsInOrder.forEach((oldSeq, newSeq) => {
+            const r = bySeq.get(oldSeq)
+            if (!r) return
+            const file = frameFileName(newSeq)
+            framesStore.put({ projectId, seq: newSeq, file, capturedAt: r.capturedAt, bytes: r.bytes })
+            lastCapturedAt = r.capturedAt
+            coverFrameSeq = newSeq
+          })
+
+          const getProjReq = projectsStore.get(projectId)
+          getProjReq.onsuccess = () => {
+            const record = getProjReq.result as ProjectRecord | undefined
+            if (record) {
+              record.frameCount = keptSeqsInOrder.length
+              record.coverFrameSeq = coverFrameSeq
+              record.lastCapturedAt = lastCapturedAt
+              projectsStore.put(record)
+            }
+          }
+        }
+        getAllReq.onerror = () => reject(getAllReq.error ?? new Error('commitFrameOrder failed'))
+
+        tx.oncomplete = () => resolve()
+        tx.onerror = () => reject(tx.error ?? new Error('commitFrameOrder failed'))
+      }),
+  )
+}

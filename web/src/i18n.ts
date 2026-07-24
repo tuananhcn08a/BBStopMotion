@@ -67,6 +67,16 @@ export const STRINGS = {
   // lại theo đúng affordance mới (nút 🗑 ở hàng 3 nút, xoá frame CUỐI). Đây là sửa copy hiển thị đi
   // kèm bắt buộc theo thay đổi thị giác/layout của T-BS71, KHÔNG đổi logic i18n hay hành vi xoá.
   'filmstrip.hintMobile': { vi: 'Chạm 🗑 để xoá frame cuối', en: 'Tap 🗑 to delete the last frame' },
+  // ---------- T-XW14 — chế độ "🔀 Sắp xếp" transactional (thay nút "×" xoá-ngay cũ) ----------
+  'filmstrip.sortEnter': { vi: 'Sắp xếp', en: 'Reorder' },
+  'filmstrip.sortHint': { vi: 'Chạm để chọn · giữ để kéo', en: 'Tap to select · hold to drag' },
+  'filmstrip.sortUndo': { vi: 'Huỷ', en: 'Undo' },
+  'filmstrip.sortDone': { vi: 'Xong', en: 'Done' },
+  'filmstrip.sortDeleteChip': { vi: 'Xoá', en: 'Delete' },
+  'filmstrip.sortDeleteConfirm': {
+    vi: 'Xoá các ảnh đã chọn? Không lấy lại được sau khi bấm "✕ Xong" đâu nhé.',
+    en: 'Delete the selected photos? This can\'t be undone after you tap "✕ Done".',
+  },
   'export.title': { vi: 'Đang ghép phim của con...', en: 'Creating your movie...' },
   'export.stageMp4': { vi: 'Ghép MP4', en: 'Compose MP4' },
   'export.stageGif': { vi: 'Tạo GIF', en: 'Create GIF' },

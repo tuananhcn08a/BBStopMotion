@@ -21,6 +21,21 @@ export function startOfDayMs(ms: number): number {
   return d.getTime()
 }
 
+/**
+ * T-XW14 B1 (architect T-XW12) — cộng/trừ N NGÀY LỊCH (không phải N×86 400 000ms) qua
+ * `Date.setDate`, DST-safe: ngày chuyển giờ có thể chỉ dài 23h/25h thực, trừ đúng
+ * `MS_PER_DAY` từ một mốc `startOfDayMs` có thể lệch sang SAI ngày lịch (vd nhảy lùi 2 ngày hoặc
+ * đứng nguyên ngày cũ) ở các múi giờ có DST. Mirror `Calendar.date(byAdding: .day, value:, to:)`
+ * iOS (`CaptureViewModel.diaryYesterdayOnionImage` dùng chính API này). Luôn trả mốc
+ * `startOfDayMs` (00:00:00) vì call-site duy nhất cần "ngày lịch trước", không cần giữ giờ/phút gốc.
+ */
+export function addDaysMs(ms: number, days: number): number {
+  const d = new Date(ms)
+  d.setDate(d.getDate() + days)
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+
 /** Danh sách "ngày lịch có chụp" đã dedup + sort tăng dần (nhiều ảnh cùng ngày → 1 ngày). */
 export function distinctCaptureDaysMs(capturedAtMs: number[]): number[] {
   const unique = new Set(capturedAtMs.map(startOfDayMs))
@@ -92,8 +107,9 @@ export function diaryTodayCount(capturedAtMs: number[], now: number = Date.now()
  * tự `getFrameBytes(projectId, seq)` khi cần, tách biệt logic thuần khỏi IndexedDB).
  */
 export function latestFrameSeqForYesterday(frames: ProjectFrame[], now: number = Date.now()): number | null {
-  const today = startOfDayMs(now)
-  const yesterday = today - MS_PER_DAY
+  // T-XW14 B1 — `addDaysMs(now, -1)` (lịch, DST-safe) THAY `startOfDayMs(now) - MS_PER_DAY` (ms
+  // cố định, có thể lệch ngày ở ranh giới DST). Xem doc-comment `addDaysMs`.
+  const yesterday = addDaysMs(now, -1)
 
   let best: ProjectFrame | null = null
   for (const frame of frames) {

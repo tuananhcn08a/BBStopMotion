@@ -84,6 +84,12 @@
   flex-direction: column;
 }
 
+/* T-XW14 — mockup §2 "Preview mờ 50% báo hiệu không đang chụp lúc này" trong chế độ Sắp xếp. */
+.previewDimmed {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .bandTop,
 .bandBottom {
   flex: 0 0 36px;
